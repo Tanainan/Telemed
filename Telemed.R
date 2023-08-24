@@ -51,14 +51,15 @@ table(data$TYPEIN)
 # 16781    19  1889
 # total visits = 1889
 
+# select only telemed (typein = 5)
+data_tele <- data[data$TYPEIN == 5,]
+
 # unique ID
 n_distinct(data_tele$PID) # 351
 
 # on average, patients visits
 nrow(data_tele)/n_distinct(data_tele$PID) # 5.381766
 
-# select only telemed (typein = 5)
-data_tele <- data[data$TYPEIN == 5,]
 
 # reset rownames
 rownames(data_tele) <- NULL
