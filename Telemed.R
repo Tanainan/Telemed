@@ -3,6 +3,7 @@ library(tidyverse)
 library(anytime)
 library(eeptools)
 library(glue)
+library(viridis)
 
 # import data
 person <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/PERSON.xlsx"))
@@ -88,6 +89,10 @@ sum(table(data_tele$PID) > 1 & table(data_tele$PID) < 4) # 91
 # more than 4
 sum(table(data_tele$PID) < 4) # 136
 
+45/351*100 # 12.82%
+91/351*100 # 25.93%
+136/351*100 # 38.75%
+
 # calculate age from BIRTH
 date_today <- Sys.Date()
 date_today
@@ -96,6 +101,7 @@ data_tele$age <- NA
 data_tele$age <- age_calc(data_tele$BIRTH, date_today, units = "years")
 
 mean(data_tele$age) # 59.81989
+sd(data_tele$age) #14.44631
 
 # categorize ages into groups
 data_tele <- data_tele %>%
@@ -140,7 +146,6 @@ table(subset(data_tele, SEX == 2)$age_group) # female
 # use data_tele1 for diseases identification
 # remove NAs
 data_tele1 <- na.omit(data_tele) # 1802
-data_tele1$code <- NA
 
 # rank the diseases
 data.frame(count=sort(table(data_tele1$DIAGCODE), decreasing=TRUE))
@@ -152,8 +157,207 @@ data.frame(count=sort(table(data_tele1$DIAGCODE), decreasing=TRUE))
 # 5        Z133         69 Special screening examination for mental and behavioural disorders
 
 # sort DIAGCODE
-# create a new column for DIAGCODE
-data_tele1$code <- substr(data_tele1$DIAGCODE, 1, 3)
+# create a new column for DIAGCODE - select only the first 3 letters
+data_tele1 <- data_tele1 %>%
+  mutate(block_char = substr(data_tele1$DIAGCODE,1,1),
+         block_num = substr(data_tele1$DIAGCODE,2,3))
 
-# rank the diseases
-data.frame(count=sort(table(data_tele1$code), decreasing=TRUE))
+data_tele1$block_num <- as.numeric(data_tele1$block_num)
+
+data_tele1 <- data_tele1 %>%
+  mutate(chapter = case_when(
+    block_char == "A" | block_char == "B" & block_num >=00 & block_num <= 99 ~ "1",
+    block_char == "C" | block_char == "D" & block_num >=00 & block_num <= 48 ~ "2",
+    block_char == "D" & block_num >=50 & block_num <= 89 ~ "3",
+    block_char == "E" & block_num >=00 & block_num <= 90 ~ "4",
+    block_char == "F" & block_num >=00 & block_num <= 99 ~ "5",
+    block_char == "G" & block_num >=00 & block_num <= 99 ~ "6",
+    block_char == "H" & block_num >=00 & block_num <= 59 ~ "7",
+    block_char == "H" & block_num >=60 & block_num <= 95 ~ "8",
+    block_char == "I" & block_num >=00 & block_num <= 99 ~ "9",
+    block_char == "J" & block_num >=00 & block_num <= 99 ~ "10",
+    block_char == "K" & block_num >=00 & block_num <= 93 ~ "11",
+    block_char == "L" & block_num >=00 & block_num <= 99 ~ "12",
+    block_char == "M" & block_num >=00 & block_num <= 99 ~ "13",
+    block_char == "N" & block_num >=00 & block_num <= 99 ~ "14",
+    block_char == "O" & block_num >=00 & block_num <= 99 ~ "15",
+    block_char == "P" & block_num >=00 & block_num <= 96 ~ "16",
+    block_char == "Q" & block_num >=00 & block_num <= 99 ~ "17",
+    block_char == "R" & block_num >=00 & block_num <= 99 ~ "18",
+    block_char == "S" | block_char == "T" & block_num >=00 & block_num <= 98 ~ "19",
+    block_char == "V" | block_char == "W" | block_char == "X"| block_char == "Y" & block_num >=01 & block_num <= 98 ~ "20",
+    block_char == "Z" & block_num >=00 & block_num <= 99 ~ "21",
+    block_char == "U" | block_char == "T" & block_num >=00 & block_num <= 99 ~ "22",
+  ))
+
+data_tele1$chapter <- as.numeric(data_tele1$chapter)
+
+check <- data_tele1 %>%
+  group_by(chapter)%>%
+  count()
+
+# separated by genders
+table(subset(data_tele1, SEX == 1)$chapter) # male
+
+# 3   4   5   9  10  11  13  14  18  21
+# 3 167  51 120   1   4   7  13  20 107
+
+table(subset(data_tele1, SEX == 2)$chapter) # female
+
+# 1   3   4   5   9  10  11  13  14  18  19  20  21
+# 1  10 620  51 384   6   1  10  16  68   1   1 140
+
+data_tele1 <- data_tele1 %>%
+  mutate(title = case_when(
+    chapter == 1 ~ "Certain infectious and parasitic diseases",
+    chapter == 2 ~ "Neoplasms",
+    chapter == 3 ~ "Diseases of the blood and blood-forming organs and certain disorders involving the immune mechanism",
+    chapter == 4 ~ "Endocrine, nutritional and metabolic diseases",
+    chapter == 5 ~ "Mental and behavioural disorders",
+    chapter == 6 ~ "Diseases of the nervous system",
+    chapter == 7 ~ "Diseases of the eye and adnexa",
+    chapter == 8 ~ "Diseases of the ear and mastoid process",
+    chapter == 9 ~ "Diseases of the circulatory system",
+    chapter == 10 ~ "Diseases of the respiratory system",
+    chapter == 11 ~ "Diseases of the digestive system",
+    chapter == 12 ~ "Diseases of the skin and subcutaneous tissue",
+    chapter == 13 ~ "Diseases of the musculoskeletal system and connective tissue",
+    chapter == 14 ~ "Diseases of the genitourinary system",
+    chapter == 15 ~ "Pregnancy, childbirth and the puerperium",
+    chapter == 16 ~ "Certain conditions originating in the perinatal period",
+    chapter == 17 ~ "Congenital malformations, deformations and chromosomal abnormalities",
+    chapter == 18 ~ "Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified",
+    chapter == 19 ~ "Injury, poisoning and certain other consequences of external causes",
+    chapter == 20 ~ "External causes of morbidity and mortality",
+    chapter == 21 ~ "Factors influencing health status and contact with health services",
+    chapter == 22 ~ "Codes for special purposes",
+  ))
+
+check <- data_tele1 %>%
+  group_by(title)%>%
+  count() %>%
+  arrange(desc(n))
+
+# 22 Disease groups (NHSO policy for telemedicine)
+#1. Hypertension	Disease gr. For burden of disease??? -> I10,I11,I119,I12,I129,I13,I131,I132,I139,I15,I151,I152,I158,I159
+#2. DM	Disease gr. For burden of disease???		-> E10,E11,E12,E13,E14
+#3. Mental health	 (Mental and behavioural disorders)	->	F00–F99
+#4. Asthma	"Disease gr. For burden of disease??? -> J40,J41,J411,J418,J42,J43,J431,J432,J438,J439,J44,J441,J448,J449,J45,J451,J458,J459,J46,J47
+#5. Cancers	 (Neoplasms)		-> C00–D48
+#6. Other diseases			-> Other
+
+data_tele1 <- data_tele1 %>%
+  mutate(NHSO_policy= case_when(
+    DIAGCODE %in% c("I10","I111","I112","I113","I114","I115","I116","I117","I118","I119","I121","I122","I123","I124","I125","I126","I127","I128","I129","I133","I134","I135","I136","I137","I138","I139","I14","I15","I150","I151","I152","I158","I159") ~ 1,
+    DIAGCODE %in% c("E109","E119","E129","E139","E149","E100","E110","E120","E130","E140","E101","E111","E121","E131","E141","E102","E112","E122","E132","E142","E103","E113","E123","E133","E143","E104","E114","E124","E134","E144","E105","E115","E125","E135","E145","E106","E116","E126","E136","E146","E107","E117","E127","E137","E147","E118","E128","E138","E148")~ 2,
+    chapter == 5 ~ 3,
+    DIAGCODE %in% c("J45","J46","J450","J451","J452","J458","J459") ~ 4,
+    chapter == 2 ~ 5 ,
+    TRUE ~ 6
+  ))
+
+data_tele1 %>%
+  group_by(NHSO_policy) %>%
+  count()
+
+data_tele1 <- data_tele1 %>%
+  mutate(NHSO_policy_des = case_when(
+    NHSO_policy == 1 ~ "Hypertension",
+    NHSO_policy == 2 ~ "Diabetes",
+    NHSO_policy == 3 ~ "Mental health",
+    NHSO_policy == 4 ~ "Asthma",
+    NHSO_policy == 5 ~ "Cancers",
+    NHSO_policy == 6 ~ "Other",
+  ))
+
+data_tele1 %>%
+  group_by(NHSO_policy,NHSO_policy_des) %>%
+  count()
+
+# 6 diseases by genders
+data_tele1 %>%
+  group_by(NHSO_policy,NHSO_policy_des,SEX) %>%
+  count()
+
+# frequency of visits for the 6 diseases
+table(data_tele1$NHSO_policy)
+
+data_tele1$year_month <- format(data_tele1$DATE_SERV, "%Y-%m")
+
+
+# visits by month
+data_tele1 %>%
+  group_by(year_month) %>%
+  count()
+
+policy <- data_tele1 %>%
+  group_by(NHSO_policy,NHSO_policy_des,year_month) %>%
+  count()
+
+# visit freq based on month
+table(data_tele1$year_month)
+
+
+figure_policy1 <- policy %>%
+  ggplot( aes(x=year_month, y=n, group=NHSO_policy_des, color=NHSO_policy_des,fill = NHSO_policy_des)) +
+  geom_line(size = 1.5) +
+  scale_color_viridis(discrete = TRUE) +
+  geom_point(size = 3) +
+  scale_color_manual(values=c("darkred", "darkblue", "darkgreen", "orange","purple","gold")) +
+  geom_text(aes(label = scales::comma(n)), vjust = -0.5, size = 1)+
+  theme(legend.position="none", plot.title = element_text(size=30)) +
+  ggtitle("disease treand") +
+  theme_minimal() +
+  theme(axis.text = element_text(angle = 90, hjust = 1))
+
+policy %>%
+  ggplot( aes(x=year_month, y=n, group=NHSO_policy_des, color=NHSO_policy_des,fill = NHSO_policy_des)) +
+  geom_col() +
+  scale_color_viridis(discrete = TRUE) +
+  geom_text(aes(label = scales::comma(n)), vjust = -0.5, size = 3)+
+  theme(legend.position="none", plot.title = element_text(size=30)) +
+  ggtitle("disease treand") +
+  theme_minimal() +
+  theme(axis.text = element_text(angle = 90, hjust = 1))
+
+policy2  <- policy  %>%
+  mutate(NHSO_policy_des_2= NHSO_policy_des)
+
+figure_policy2  <-  policy2 %>%
+  ggplot( aes(x=year_month, y=n)) +
+  geom_line(data = policy2 , aes(group = NHSO_policy_des_2), color="darkblue", size=1.5, alpha=0.5) +
+  geom_line(aes(color= NHSO_policy_des_2), color="#69b3a2", size=1.2 ) +
+  scale_color_viridis(discrete = TRUE) +
+  theme_minimal() +
+  theme(
+    legend.position="none",
+    plot.title = element_text(size=14),
+    panel.grid = element_blank()
+  ) +
+  theme(axis.text = element_text(angle = 90, hjust = 1))+
+  ggtitle("disease trend") +
+  facet_wrap(~ NHSO_policy_des_2)
+
+figure_policy1/figure_policy2
+
+# age group - 6 disease groups
+table(data_tele1$NHSO_policy_des,data_tele1$age_group)
+
+month_visit<-data_tele1 %>%
+  group_by(year_month) %>%
+  count()
+
+histogram <- ggplot(data = month_visit, mapping = aes(x = year_month,y = n ,fill = n)) +
+  geom_col() +
+  theme_minimal() +
+  xlab("Timeline") +
+  scale_fill_gradient(low = "yellow", high = "red") +
+  ylab("Visit") +
+  geom_text(aes(label = scales::comma(n)), vjust = -0.5, size = 3) +
+  # scale_x_date(date_labels = "%b-%y", breaks = '1 month', expand = c(0.001, 5)) +
+  theme(axis.text = element_text(angle = 90, hjust = 1))+
+  # geom_smooth(aes(group = year, color = year), method = "lm", se = FALSE) +
+  scale_color_manual(values = c("#69b3a2", "#F47695", "#959359"))
+
+histogram
+
