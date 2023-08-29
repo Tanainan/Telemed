@@ -169,7 +169,7 @@ data$chapter <- as.numeric(data$chapter)
 
 check <- data %>%
   group_by(chapter)%>%
-  count()
+  count() # NA = 401
 
 data <- data %>%
   mutate(title = case_when(
@@ -352,47 +352,47 @@ policy <- data_tele1 %>%
 table(data_tele1$year_month)
 
 
-figure_policy1 <- policy %>%
-  ggplot( aes(x=year_month, y=n, group=NHSO_policy_des, color=NHSO_policy_des,fill = NHSO_policy_des)) +
-  geom_line(size = 1.5) +
-  scale_color_viridis(discrete = TRUE) +
-  geom_point(size = 3) +
-  scale_color_manual(values=c("darkred", "darkblue", "darkgreen", "orange","purple","gold")) +
-  geom_text(aes(label = scales::comma(n)), vjust = -0.5, size = 1)+
-  theme(legend.position="none", plot.title = element_text(size=30)) +
-  ggtitle("disease treand") +
-  theme_minimal() +
-  theme(axis.text = element_text(angle = 90, hjust = 1))
+# figure_policy1 <- policy %>%
+#   ggplot( aes(x=year_month, y=n, group=NHSO_policy_des, color=NHSO_policy_des,fill = NHSO_policy_des)) +
+#   geom_line(size = 1.5) +
+#   scale_color_viridis(discrete = TRUE) +
+#   geom_point(size = 3) +
+#   scale_color_manual(values=c("darkred", "darkblue", "darkgreen", "orange","purple","gold")) +
+#   geom_text(aes(label = scales::comma(n)), vjust = -0.5, size = 1)+
+#   theme(legend.position="none", plot.title = element_text(size=30)) +
+#   ggtitle("disease treand") +
+#   theme_minimal() +
+#   theme(axis.text = element_text(angle = 90, hjust = 1))
 
-policy %>%
-  ggplot( aes(x=year_month, y=n, group=NHSO_policy_des, color=NHSO_policy_des,fill = NHSO_policy_des)) +
-  geom_col() +
-  scale_color_viridis(discrete = TRUE) +
-  geom_text(aes(label = scales::comma(n)), vjust = -0.5, size = 3)+
-  theme(legend.position="none", plot.title = element_text(size=30)) +
-  ggtitle("disease treand") +
-  theme_minimal() +
-  theme(axis.text = element_text(angle = 90, hjust = 1))
+# policy %>%
+#   ggplot( aes(x=year_month, y=n, group=NHSO_policy_des, color=NHSO_policy_des,fill = NHSO_policy_des)) +
+#   geom_col() +
+#   scale_color_viridis(discrete = TRUE) +
+#   geom_text(aes(label = scales::comma(n)), vjust = -0.5, size = 3)+
+#   theme(legend.position="none", plot.title = element_text(size=30)) +
+#   ggtitle("disease treand") +
+#   theme_minimal() +
+#   theme(axis.text = element_text(angle = 90, hjust = 1))
 
-policy2  <- policy  %>%
-  mutate(NHSO_policy_des_2= NHSO_policy_des)
-
-figure_policy2  <-  policy2 %>%
-  ggplot( aes(x=year_month, y=n)) +
-  geom_line(data = policy2 , aes(group = NHSO_policy_des_2), color="darkblue", size=1.5, alpha=0.5) +
-  geom_line(aes(color= NHSO_policy_des_2), color="#69b3a2", size=1.2 ) +
-  scale_color_viridis(discrete = TRUE) +
-  theme_minimal() +
-  theme(
-    legend.position="none",
-    plot.title = element_text(size=14),
-    panel.grid = element_blank()
-  ) +
-  theme(axis.text = element_text(angle = 90, hjust = 1))+
-  ggtitle("disease trend") +
-  facet_wrap(~ NHSO_policy_des_2)
-
-figure_policy1/figure_policy2
+# policy2  <- policy  %>%
+#   mutate(NHSO_policy_des_2= NHSO_policy_des)
+#
+# figure_policy2  <-  policy2 %>%
+#   ggplot( aes(x=year_month, y=n)) +
+#   geom_line(data = policy2 , aes(group = NHSO_policy_des_2), color="darkblue", size=1.5, alpha=0.5) +
+#   geom_line(aes(color= NHSO_policy_des_2), color="#69b3a2", size=1.2 ) +
+#   scale_color_viridis(discrete = TRUE) +
+#   theme_minimal() +
+#   theme(
+#     legend.position="none",
+#     plot.title = element_text(size=14),
+#     panel.grid = element_blank()
+#   ) +
+#   theme(axis.text = element_text(angle = 90, hjust = 1))+
+#   ggtitle("disease trend") +
+#   facet_wrap(~ NHSO_policy_des_2)
+#
+# figure_policy1/figure_policy2
 
 # age group - 6 disease groups
 table(data_tele1$NHSO_policy_des,data_tele1$age_group)
