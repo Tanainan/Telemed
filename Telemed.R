@@ -47,64 +47,18 @@ for (i in 1:nrow(data)){
 # change date format for BIRTH
 data$BIRTH <- anydate(data$BIRTH)
 
-# typein
-table(data$TYPEIN)
-
-# 1     3      5 = telemed
-# 16781    19  1889
-# total visits = 1889
-
-# select only telemed (typein = 5)
-data_tele <- data[data$TYPEIN == 5,]
-
-# unique ID
-n_distinct(data_tele$PID) # 351
-
-# on average, patients visits
-nrow(data_tele)/n_distinct(data_tele$PID) # 5.381766
-
-
-# reset rownames
-rownames(data_tele) <- NULL
-
-# gender
-table(data_tele$SEX)
-
-# male = 509
-# female = 1380
-
-prop.table(table(data_tele$SEX))
-
-# male = 0.2694547
-# female = 0.7305453
-
-# freq of visits
-max(table(data_tele$PID))
-# the most freq = 21
-
-# one visit
-sum(table(data_tele$PID) == 1) # 45
-# more than one visit but less than 4
-sum(table(data_tele$PID) > 1 & table(data_tele$PID) < 4) # 91
-# more than 4
-sum(table(data_tele$PID) < 4) # 136
-
-45/351*100 # 12.82%
-91/351*100 # 25.93%
-136/351*100 # 38.75%
-
 # calculate age from BIRTH
 date_today <- Sys.Date()
 date_today
 
-data_tele$age <- NA
-data_tele$age <- age_calc(data_tele$BIRTH, date_today, units = "years")
+data$age <- NA
+data$age <- age_calc(data$BIRTH, date_today, units = "years")
 
-mean(data_tele$age) # 59.81989
-sd(data_tele$age) #14.44631
+# month visit
+data$year_month <- format(data$DATE_SERV, "%Y-%m")
 
 # categorize ages into groups
-data_tele <- data_tele %>%
+data <- data %>%
   mutate(age_group = case_when(
     age >=0 & age <4 ~ "1",
     age >=4 & age <8 ~ "2",
@@ -133,38 +87,59 @@ data_tele <- data_tele %>%
     age >=96 & age <100~ "25"
   ))
 
-# age group of visit
-table(data_tele$age_group)
-table(subset(data_tele, SEX == 1)$age_group) # male
-# 10 11 12 13 14 15 16 17 18 19 20 21 22 23  3  7  8  9
-# 21 58 27 40 15 53 52 55 39 36  3  9 22  9 19 25  1 25
+data <- data %>%
+  mutate(age_des = case_when(
+    age_group == 1 ~ "0-4 y/o",
+    age_group == 2 ~ "4-8 y/o",
+    age_group == 3 ~ "8-12 y/o",
+    age_group == 4 ~ "12-16 y/o",
+    age_group == 5 ~ "16-20 y/o",
+    age_group == 6 ~ "20-24 y/o",
+    age_group == 7 ~ "24-28 y/o",
+    age_group == 8 ~ "28-32 y/o",
+    age_group == 9 ~ "32-36 y/o",
+    age_group == 10 ~ "36-40 y/o",
+    age_group == 11 ~ "40-44 y/o",
+    age_group == 12 ~ "44-48 y/o",
+    age_group == 13 ~ "48-52 y/o",
+    age_group == 14 ~ "52-56 y/o",
+    age_group == 15 ~ "56-60 y/o",
+    age_group == 16 ~ "60-64 y/o",
+    age_group == 17 ~ "64-68 y/o",
+    age_group == 18 ~ "68-72 y/o",
+    age_group == 19 ~ "72-76 y/o",
+    age_group == 20 ~ "76-80 y/o",
+    age_group == 21 ~ "80-84 y/o",
+    age_group == 22 ~ "84-88 y/o",
+    age_group == 23 ~ "88-92 y/o",
+    age_group == 24 ~ "92-96 y/o",
+    age_group == 25 ~ "96-100 y/o"))
 
-table(subset(data_tele, SEX == 2)$age_group) # female
-# 10  11  12  13  14  15  16  17  18  19  20  21  22  23  24   3   6   7   8   9
-# 38  43  78 102 137 175 210 173  82 137  66  86   7  14   5   9   1   1   2  14
-
-# use data_tele1 for diseases identification
-# remove NAs
-data_tele1 <- na.omit(data_tele) # 1802
-
-# rank the diseases
-data.frame(count=sort(table(data_tele1$DIAGCODE), decreasing=TRUE))
-
-# 1        E789        499 Other disorders of purine and pyrimidine metabolism
-# 2         I10        498 Essential (primary) hypertension
-# 3        E119        255 Non-insulin-dependent diabetes mellitus type 2 at without complications
-# 4        Z719         82 Counselling\, unspecified
-# 5        Z133         69 Special screening examination for mental and behavioural disorders
+data <- data %>%
+  mutate(age_des = factor(age_des,
+                          levels = c("0-4 y/o","4-8 y/o",
+                                     "8-12 y/o","12-16 y/o",
+                                     "16-20 y/o","20-24 y/o",
+                                     "24-28 y/o","28-32 y/o",
+                                     "32-36 y/o","36-40 y/o",
+                                     "40-44 y/o","44-48 y/o",
+                                     "48-52 y/o","52-56 y/o",
+                                     "56-60 y/o","60-64 y/o",
+                                     "64-68 y/o","68-72 y/o",
+                                     "72-76 y/o","76-80 y/o",
+                                     "80-84 y/o","84-88 y/o",
+                                     "88-92 y/o","92-96 y/o",
+                                     "96-100 y/o"),
+                          ordered = TRUE))
 
 # sort DIAGCODE
 # create a new column for DIAGCODE - select only the first 3 letters
-data_tele1 <- data_tele1 %>%
-  mutate(block_char = substr(data_tele1$DIAGCODE,1,1),
-         block_num = substr(data_tele1$DIAGCODE,2,3))
+data <- data %>%
+  mutate(block_char = substr(data$DIAGCODE,1,1),
+         block_num = substr(data$DIAGCODE,2,3))
 
-data_tele1$block_num <- as.numeric(data_tele1$block_num)
-
-data_tele1 <- data_tele1 %>%
+data$block_num <- as.numeric(data$block_num)
+data <- data %>%
   mutate(chapter = case_when(
     block_char == "A" | block_char == "B" & block_num >=00 & block_num <= 99 ~ "1",
     block_char == "C" | block_char == "D" & block_num >=00 & block_num <= 48 ~ "2",
@@ -190,24 +165,13 @@ data_tele1 <- data_tele1 %>%
     block_char == "U" | block_char == "T" & block_num >=00 & block_num <= 99 ~ "22",
   ))
 
-data_tele1$chapter <- as.numeric(data_tele1$chapter)
+data$chapter <- as.numeric(data$chapter)
 
-check <- data_tele1 %>%
+check <- data %>%
   group_by(chapter)%>%
   count()
 
-# separated by genders
-table(subset(data_tele1, SEX == 1)$chapter) # male
-
-# 3   4   5   9  10  11  13  14  18  21
-# 3 167  51 120   1   4   7  13  20 107
-
-table(subset(data_tele1, SEX == 2)$chapter) # female
-
-# 1   3   4   5   9  10  11  13  14  18  19  20  21
-# 1  10 620  51 384   6   1  10  16  68   1   1 140
-
-data_tele1 <- data_tele1 %>%
+data <- data %>%
   mutate(title = case_when(
     chapter == 1 ~ "Certain infectious and parasitic diseases",
     chapter == 2 ~ "Neoplasms",
@@ -233,7 +197,7 @@ data_tele1 <- data_tele1 %>%
     chapter == 22 ~ "Codes for special purposes",
   ))
 
-check <- data_tele1 %>%
+check <- data %>%
   group_by(title)%>%
   count() %>%
   arrange(desc(n))
@@ -246,7 +210,7 @@ check <- data_tele1 %>%
 #5. Cancers	 (Neoplasms)		-> C00–D48
 #6. Other diseases			-> Other
 
-data_tele1 <- data_tele1 %>%
+data <- data %>%
   mutate(NHSO_policy= case_when(
     DIAGCODE %in% c("I10","I111","I112","I113","I114","I115","I116","I117","I118","I119","I121","I122","I123","I124","I125","I126","I127","I128","I129","I133","I134","I135","I136","I137","I138","I139","I14","I15","I150","I151","I152","I158","I159") ~ 1,
     DIAGCODE %in% c("E109","E119","E129","E139","E149","E100","E110","E120","E130","E140","E101","E111","E121","E131","E141","E102","E112","E122","E132","E142","E103","E113","E123","E133","E143","E104","E114","E124","E134","E144","E105","E115","E125","E135","E145","E106","E116","E126","E136","E146","E107","E117","E127","E137","E147","E118","E128","E138","E148")~ 2,
@@ -256,11 +220,11 @@ data_tele1 <- data_tele1 %>%
     TRUE ~ 6
   ))
 
-data_tele1 %>%
+data %>%
   group_by(NHSO_policy) %>%
   count()
 
-data_tele1 <- data_tele1 %>%
+data <- data %>%
   mutate(NHSO_policy_des = case_when(
     NHSO_policy == 1 ~ "Hypertension",
     NHSO_policy == 2 ~ "Diabetes",
@@ -270,9 +234,102 @@ data_tele1 <- data_tele1 %>%
     NHSO_policy == 6 ~ "Other",
   ))
 
-data_tele1 %>%
+data %>%
   group_by(NHSO_policy,NHSO_policy_des) %>%
   count()
+
+################################################
+# typein
+table(data$TYPEIN)
+
+# 1     3      5 = telemed
+# 16781    19  1889
+# total visits = 1889
+
+# select only telemed (typein = 5)
+data_tele <- data[data$TYPEIN == 5,]
+
+# unique ID
+n_distinct(data_tele$PID) # 351
+
+# on average, patients visits
+nrow(data_tele)/n_distinct(data_tele$PID) # 5.381766
+
+# reset rownames
+rownames(data_tele) <- NULL
+
+# gender
+table(data_tele$SEX)
+
+# male = 509
+# female = 1380
+
+prop.table(table(data_tele$SEX))
+
+# male = 0.2694547
+# female = 0.7305453
+
+# freq of visits
+max(table(data_tele$PID))
+# the most freq = 21
+
+# which one?
+names(which.max(table(data_tele$PID))) # 95623
+
+# one visit
+sum(table(data_tele$PID) == 1) # 45
+# more than one visit but less than 4
+sum(table(data_tele$PID) > 1 & table(data_tele$PID) < 4) # 91
+# more than 4
+sum(table(data_tele$PID) < 4) # 136
+
+45/351*100 # 12.82%
+91/351*100 # 25.93%
+136/351*100 # 38.75%
+
+mean(data_tele$age) # 59.81989
+sd(data_tele$age) #14.44631
+
+# age group of visit
+table(data_tele$age_group)
+table(subset(data_tele, SEX == 1)$age_group) # male
+# 10 11 12 13 14 15 16 17 18 19 20 21 22 23  3  7  8  9
+# 21 58 27 40 15 53 52 55 39 36  3  9 22  9 19 25  1 25
+
+table(subset(data_tele, SEX == 2)$age_group) # female
+# 10  11  12  13  14  15  16  17  18  19  20  21  22  23  24   3   6   7   8   9
+# 38  43  78 102 137 175 210 173  82 137  66  86   7  14   5   9   1   1   2  14
+
+# use data_tele1 for diseases identification
+# remove NAs
+data_tele1 <- na.omit(data_tele) # 1802
+
+# rank the diseases
+data.frame(count=sort(table(data_tele1$DIAGCODE), decreasing=TRUE))
+
+# 1        E789        499 Other disorders of purine and pyrimidine metabolism
+# 2         I10        498 Essential (primary) hypertension
+# 3        E119        255 Non-insulin-dependent diabetes mellitus type 2 at without complications
+# 4        Z719         82 Counselling\, unspecified
+# 5        Z133         69 Special screening examination for mental and behavioural disorders
+
+
+# separated by genders
+table(subset(data_tele1, SEX == 1)$chapter) # male
+
+# 3   4   5   9  10  11  13  14  18  21
+# 3 167  51 120   1   4   7  13  20 107
+
+table(subset(data_tele1, SEX == 2)$chapter) # female
+
+# 1   3   4   5   9  10  11  13  14  18  19  20  21
+# 1  10 620  51 384   6   1  10  16  68   1   1 140
+
+# find out about the patient that has the most visits
+subset(data_tele1, PID == "95623")$title %>% table()
+
+# find out about the patient that has the most visits
+subset(data_tele1, PID == "95623")$NHSO_policy_des %>% table()
 
 # 6 diseases by genders
 data_tele1 %>%
@@ -281,9 +338,6 @@ data_tele1 %>%
 
 # frequency of visits for the 6 diseases
 table(data_tele1$NHSO_policy)
-
-data_tele1$year_month <- format(data_tele1$DATE_SERV, "%Y-%m")
-
 
 # visits by month
 data_tele1 %>%
@@ -343,7 +397,7 @@ figure_policy1/figure_policy2
 # age group - 6 disease groups
 table(data_tele1$NHSO_policy_des,data_tele1$age_group)
 
-month_visit<-data_tele1 %>%
+month_visit<- data_tele1 %>%
   group_by(year_month) %>%
   count()
 
@@ -360,4 +414,48 @@ histogram <- ggplot(data = month_visit, mapping = aes(x = year_month,y = n ,fill
   scale_color_manual(values = c("#69b3a2", "#F47695", "#959359"))
 
 histogram
+
+###### compare with physical visits ######
+# based on date
+tele_vs_phy_date <- ggplot(data = data, aes(x = year_month, fill = TYPEIN)) +
+  geom_bar() +
+  theme_minimal() +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Referral", "Telemed"))
+
+tele_vs_phy_date
+
+# based on diseases ICD10
+data1 <- na.omit(data)
+
+data1$chapter <- as.numeric(data1$chapter)
+
+tele_vs_phy_disease <- ggplot(data = data1, aes(x = as.factor(chapter), fill = TYPEIN)) +
+  geom_bar() +
+  theme_minimal() +
+  xlab("Chapter") +
+  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Referral", "Telemed"))
+# geom_text(stat= "count",aes(label = ..count..), vjust = -1)
+tele_vs_phy_disease
+
+# based on sex and age
+data1_male <- subset(data1, SEX == 1)
+ggplot(data = data1_male, aes(x = age_des, fill = TYPEIN)) +
+  geom_bar() +
+  theme_minimal() +
+  xlab("Age Group") +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Referral", "Telemed"))
+
+data1_female <- subset(data1, SEX == 2)
+ggplot(data = data1_female, aes(x = age_des, fill = TYPEIN)) +
+  geom_bar() +
+  theme_minimal() +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  xlab("Age Group") +
+  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Referral", "Telemed"))
+
+# based on NHSO diseases
+
+
 
