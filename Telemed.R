@@ -8,30 +8,89 @@ library(viridis)
 # import data
 person <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/PERSON.xlsx"))
 service <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/SERVICE.xlsx"))
-#ipd <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/DIAGNOSIS_IPD.xlsx"))
+ipd <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/DIAGNOSIS_IPD.xlsx"))
 opd <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/DIAGNOSIS_OPD.xlsx"))
-
-# change date format
-opd$DATE_SERV <- anydate(opd$DATE_SERV)
-service$DATE_SERV <- anydate(service$DATE_SERV)
-
-# select only columns being used for each data set
-person <- person[, c("PID", "HN", "SEX", "BIRTH")]
-opd <- opd[, c("PID", "SEQ", "DIAGCODE", "DIAGTYPE", "CLINIC", "DATE_SERV")]
-service <- service[, c("PID", "SEQ", "TYPEIN", "DATE_SERV")]
+adm <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/ADMISSION.xlsx"))
 
 # find duplicate
 duplicated(person) %>% sum # none is duplicated
 duplicated(opd) %>% sum() # 4 is duplicated
 duplicated(service) %>% sum() # none is duplicated
+duplicated(ipd) %>% sum() # 1 is duplicated
+duplicated(adm) %>% sum() # none is duplicated
 
 which(duplicated(opd) == T)
+which(duplicated(ipd) == T)
 
 # remove duplicates
 opd <- unique(opd)
+ipd <- unique(ipd)
+
+# new_DF <- data[rowSums(is.na(data)) > 0,]
+
+
+# merge opd and ipd
+
+
+# change date format
+opd$DATE_SERV <- anydate(opd$DATE_SERV)
+service$DATE_SERV <- anydate(service$DATE_SERV)
+ipd$DATETIME_ADMIT <- substr(ipd$DATETIME_ADMIT,1,8)
+ipd$DATETIME_ADMIT <- anydate(ipd$DATETIME_ADMIT)
+
+# select only columns being used for each data set
+person <- person[, c("PID", "SEX", "BIRTH")]
+opd <- opd[, c("PID", "SEQ", "DIAGCODE", "DIAGTYPE", "DATE_SERV")]
+service <- service[, c("PID", "SEQ", "TYPEIN", "DATE_SERV")]
+ipd <- ipd[, c("PID", "AN", "DATETIME_ADMIT", "DIAGCODE", "DIAGTYPE")]
+
+# change column name
+colnames(ipd)[colnames(ipd) == "DATETIME_ADMIT"] <- "DATE_SERV"
+
+ipd$SEQ <- NA
+ipd$TYPEIN <- NA
+# merge admission and ipd
+for (i in 1:nrow(ipd)){
+  for (j in 1:nrow(adm)){
+    if (adm[j, c("AN")] == ipd[i, c("AN")]){
+      ipd[i, c("SEQ", "TYPEIN")] <- adm[j, c("SEQ", "TYPEIN")]
+    }
+  }
+}
+
+# fill out the missing value
+rownames(ipd) <- NULL
+which(is.na(ipd$SEQ))
+ipd[721:723, c("SEQ")] <- 3405600037
+ipd[721:723, c("TYPEIN")] <- 1
+
+
+# ipd$SEQ <- as.character(ipd$SEQ)
+ipd$PID <- as.character(ipd$PID)
+ipd$DIAGTYPE <- as.character(ipd$DIAGTYPE)
+# ipd$TYPEIN <- as.character(ipd$TYPEIN)
 
 # merge service and opd
 data <- full_join(opd, service, by = c("SEQ" = "SEQ", "PID" = "PID", "DATE_SERV" = "DATE_SERV"))
+
+# merge data and ipd
+data <- full_join(data, ipd, by = c("SEQ" = "SEQ", "PID" = "PID", "DATE_SERV" = "DATE_SERV",
+                                    "DIAGCODE" = "DIAGCODE", "DIAGTYPE" = "DIAGTYPE", "TYPEIN" = "TYPEIN"))
+
+# remove column AN from data
+data <- data[, !names(data) %in% c("AN")]
+
+rownames(data) <- NULL
+
+# search for missing values in data
+which(is.na(data$DIAGCODE))
+which(complete.cases(data) == FALSE)
+
+# data0 <- full_join(service, ipd, by = c("SEQ" = "SEQ", "PID" = "PID", "DATE_SERV" = "DATE_SERV"))
+
+# find missing data
+# missing0 <- data0[rowSums(is.na(data0)) > 0,]
+# missing <- data[rowSums(is.na(data)) > 0,]
 
 data$SEX <- NA
 data$BIRTH <- NA
@@ -44,15 +103,14 @@ for (i in 1:nrow(data)){
   }
 }
 
+
+
 # change date format for BIRTH
 data$BIRTH <- anydate(data$BIRTH)
 
 # calculate age from BIRTH
-date_today <- Sys.Date()
-date_today
-
 data$age <- NA
-data$age <- age_calc(data$BIRTH, date_today, units = "years")
+data$age <- age_calc(data$BIRTH, data$DATE_SERV, units = "years")
 
 # month visit
 data$year_month <- format(data$DATE_SERV, "%Y-%m")
@@ -242,8 +300,8 @@ data %>%
 # typein
 table(data$TYPEIN)
 
-# 1     3      5 = telemed
-# 16781    19  1889
+# 0     1     3     5
+# 1016 16781    19  1889
 # total visits = 1889
 
 # select only telemed (typein = 5)
@@ -258,7 +316,7 @@ nrow(data_tele)/n_distinct(data_tele$PID) # 5.381766
 # reset rownames
 rownames(data_tele) <- NULL
 
-# gender
+# gender based on visits
 table(data_tele$SEX)
 
 # male = 509
@@ -269,6 +327,16 @@ prop.table(table(data_tele$SEX))
 # male = 0.2694547
 # female = 0.7305453
 
+# gender based on person
+table(person$SEX)
+
+# male = 111
+# female = 258
+
+prop.table(table(person$SEX))
+# male = 0.301
+# female = 0.699
+
 # freq of visits
 max(table(data_tele$PID))
 # the most freq = 21
@@ -278,17 +346,28 @@ names(which.max(table(data_tele$PID))) # 95623
 
 # one visit
 sum(table(data_tele$PID) == 1) # 45
-# more than one visit but less than 4
-sum(table(data_tele$PID) > 1 & table(data_tele$PID) < 4) # 91
-# more than 4
-sum(table(data_tele$PID) < 4) # 136
+# more than one visit but less than 2
+sum(table(data_tele$PID) > 1 & table(data_tele$PID) <= 2) # 34
+# more than 2 visit but less than 3
+sum(table(data_tele$PID) > 2 & table(data_tele$PID) <= 3) # 57
+# more than 3 visit but less than 4
+sum(table(data_tele$PID) > 3 & table(data_tele$PID) <= 4) # 27
+# more than 4 visit but less than 5
+sum(table(data_tele$PID) > 4 & table(data_tele$PID) <= 5) # 30
+# more than 5
+sum(table(data_tele$PID) > 5) # 158
 
 45/351*100 # 12.82%
-91/351*100 # 25.93%
-136/351*100 # 38.75%
+34/351*100 # 9.69%
+57/351*100 # 16.24%
+27/351*100 # 7.69%
+30/351*100 # 8.55%
+158/351*100 # 45.01%
 
 mean(data_tele$age) # 59.81989
 sd(data_tele$age) #14.44631
+min(data_tele$age) # 9.18
+max(data_tele$age) # 92.93
 
 # age group of visit
 table(data_tele$age_group)
@@ -456,6 +535,13 @@ ggplot(data = data1_female, aes(x = age_des, fill = TYPEIN)) +
   scale_fill_discrete(name = "Type", label = c("Physical Visit", "Referral", "Telemed"))
 
 # based on NHSO diseases
+ggplot(data = data1, aes(x = as.factor(NHSO_policy_des), fill = TYPEIN)) +
+  geom_bar() +
+  theme_minimal() +
+  xlab("NHSO Policy") +
+  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Referral", "Telemed")) +
+  theme(axis.text = element_text(angle = 90, hjust = 1))
+
 
 
 
