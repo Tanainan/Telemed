@@ -26,12 +26,6 @@ which(duplicated(ipd) == T)
 opd <- unique(opd)
 ipd <- unique(ipd)
 
-# new_DF <- data[rowSums(is.na(data)) > 0,]
-
-
-# merge opd and ipd
-
-
 # change date format
 opd$DATE_SERV <- anydate(opd$DATE_SERV)
 service$DATE_SERV <- anydate(service$DATE_SERV)
@@ -58,12 +52,15 @@ for (i in 1:nrow(ipd)){
   }
 }
 
+
 # fill out the missing value
 rownames(ipd) <- NULL
 which(is.na(ipd$SEQ))
 ipd[721:723, c("SEQ")] <- 3405600037
 ipd[721:723, c("TYPEIN")] <- 1
 
+# remove column AN from ipd
+ipd <- ipd[, !names(ipd) %in% c("AN")]
 
 # ipd$SEQ <- as.character(ipd$SEQ)
 ipd$PID <- as.character(ipd$PID)
@@ -73,24 +70,71 @@ ipd$DIAGTYPE <- as.character(ipd$DIAGTYPE)
 # merge service and opd
 data <- full_join(opd, service, by = c("SEQ" = "SEQ", "PID" = "PID", "DATE_SERV" = "DATE_SERV"))
 
+na_opd_service <- data[rowSums(is.na(data)) > 0,]
+rownames(na_opd_service) <- NULL
+
+# remove missing values from the data first
+data <- na.omit(data)
+
+# import missingvalue_UPDATE file
+df <- read.csv("~/Downloads/Telemed/43 แฟ้ม Telemed/Missingvalue_UPDATE.csv")
+
+# change date format
+df$DATE_SERV <- as.Date(df$DATE_SERV, format = "%d/%m/%Y")
+
+# combine ipd and missingvalue files
+ipd <- rbind(ipd, df)
+
+# search for duplicates
+duplicated(ipd) %>% sum
+
+# remove duplicates
+ipd <- unique(ipd)
+
+# merge ipd and na_opd_service
+for (i in 1:nrow(ipd)){
+  for (j in 1:nrow(na_opd_service)){
+    if (na_opd_service[j, c("PID")] == ipd[i, c("PID")] &
+        na_opd_service[j, c("SEQ")] == ipd[i, c("SEQ")] &
+        na_opd_service[j, c("DATE_SERV")] == ipd[i, c("DATE_SERV")] &
+        na_opd_service[j, c("TYPEIN")] == ipd[i, c("TYPEIN")]){
+      na_opd_service[j, c("DIAGCODE", "DIAGTYPE")] <- ipd[i, c("DIAGCODE", "DIAGTYPE")]
+    }
+  }
+}
+
+# combine ipd with na_opd_service
+ipd <- rbind(ipd, na_opd_service)
+
+rownames(ipd) <- NULL
+
+# search for duplicates
+duplicated(ipd) %>% sum # 395
+
+# remove duplicates
+ipd <- unique(ipd)
+
 # merge data and ipd
 data <- full_join(data, ipd, by = c("SEQ" = "SEQ", "PID" = "PID", "DATE_SERV" = "DATE_SERV",
                                     "DIAGCODE" = "DIAGCODE", "DIAGTYPE" = "DIAGTYPE", "TYPEIN" = "TYPEIN"))
 
-# remove column AN from data
-data <- data[, !names(data) %in% c("AN")]
+# check for NAs
+data[rowSums(is.na(data)) > 0,]
 
+# df$SEQ <- as.character(df$SEQ)
+# df$PID <- as.character(df$PID)
+# df$DIAGTYPE <- as.character(df$DIAGTYPE)
+# df$TYPEIN <- as.character(df$TYPEIN)
+#
+# # merge data and df
+# data <- full_join(data, df, by = c("SEQ" = "SEQ", "PID" = "PID", "DATE_SERV" = "DATE_SERV",
+#                                    "DIAGCODE" = "DIAGCODE", "DIAGTYPE" = "DIAGTYPE", "TYPEIN" = "TYPEIN"))
 rownames(data) <- NULL
 
-# search for missing values in data
-which(is.na(data$DIAGCODE))
-which(complete.cases(data) == FALSE)
 
-# data0 <- full_join(service, ipd, by = c("SEQ" = "SEQ", "PID" = "PID", "DATE_SERV" = "DATE_SERV"))
 
-# find missing data
-# missing0 <- data0[rowSums(is.na(data0)) > 0,]
-# missing <- data[rowSums(is.na(data)) > 0,]
+# which(complete.cases(data) == FALSE)
+
 
 data$SEX <- NA
 data$BIRTH <- NA
@@ -103,7 +147,8 @@ for (i in 1:nrow(data)){
   }
 }
 
-
+# check for NAs
+data[rowSums(is.na(data)) > 0,]
 
 # change date format for BIRTH
 data$BIRTH <- anydate(data$BIRTH)
