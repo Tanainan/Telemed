@@ -121,6 +121,22 @@ data <- full_join(data, ipd, by = c("SEQ" = "SEQ", "PID" = "PID", "DATE_SERV" = 
 # check for NAs
 data[rowSums(is.na(data)) > 0,]
 
+which(is.na(data$DIAGCODE))
+data[19608, c("DIAGCODE", "DIAGTYPE")] <- c("Z539", "1")
+data[19610, c("DIAGCODE", "DIAGTYPE")] <- c("Z539", "1")
+
+# copy row 19609
+data <- data %>% slice(rep(19609,4)) %>%
+  bind_rows(data)
+
+data[1, c("DIAGCODE", "DIAGTYPE")] <- c("L089", "1")
+data[2, c("DIAGCODE", "DIAGTYPE")] <- c("E119", "2")
+data[3, c("DIAGCODE", "DIAGTYPE")] <- c("E789", "2")
+data[4, c("DIAGCODE", "DIAGTYPE")] <- c("I10", "2")
+data[19613, c("DIAGCODE", "DIAGTYPE")] <- c("N183", "2")
+
+
+
 # df$SEQ <- as.character(df$SEQ)
 # df$PID <- as.character(df$PID)
 # df$DIAGTYPE <- as.character(df$DIAGTYPE)
@@ -272,7 +288,10 @@ data$chapter <- as.numeric(data$chapter)
 
 check <- data %>%
   group_by(chapter)%>%
-  count() # NA = 401
+  count()
+
+# check for NAs
+data[rowSums(is.na(data)) > 0,]
 
 data <- data %>%
   mutate(title = case_when(
@@ -345,9 +364,9 @@ data %>%
 # typein
 table(data$TYPEIN)
 
-# 0     1     3     5
-# 1016 16781    19  1889
-# total visits = 1889
+# 1     3     5
+# 17554    23  2037
+# total visits = 2037
 
 # select only telemed (typein = 5)
 data_tele <- data[data$TYPEIN == 5,]
@@ -355,8 +374,18 @@ data_tele <- data[data$TYPEIN == 5,]
 # unique ID
 n_distinct(data_tele$PID) # 351
 
+# since the data is supposed to record patients who used telemedicine (not the whole patients in the hospital)
+# we see which PID from the PERSON file do not have TYPEIN = 5 at all
+data_tele_person <- data.frame(PID = unique(data_tele$PID))
+missing_TYPEIN_5 <- data.frame(PID = setdiff(person$PID, data_tele_person$PID))
+
+# we remove patients who never use telemedicine from the data file
+data <- data[data$PID %in% intersect(person$PID, data_tele_person$PID), ]
+# data11 <- data[data$PID %in% setdiff(person$PID, data_tele_person$PID), ]
+# table(data11$PID)
+
 # on average, patients visits
-nrow(data_tele)/n_distinct(data_tele$PID) # 5.381766
+nrow(data_tele)/n_distinct(data_tele$PID) # 5.803419
 
 # reset rownames
 rownames(data_tele) <- NULL
@@ -364,23 +393,27 @@ rownames(data_tele) <- NULL
 # gender based on visits
 table(data_tele$SEX)
 
-# male = 509
-# female = 1380
+# male = 538
+# female = 1499
+
+# pie(table(data_tele$SEX), c("Male", "Female"))
 
 prop.table(table(data_tele$SEX))
 
-# male = 0.2694547
-# female = 0.7305453
+# male = 0.26
+# female = 0.74
 
 # gender based on person
+person <- person[person$PID %in% intersect(person$PID, data_tele_person$PID), ]
+
 table(person$SEX)
-
-# male = 111
-# female = 258
-
+#
+# # male = 104
+# # female = 247
+#
 prop.table(table(person$SEX))
-# male = 0.301
-# female = 0.699
+# # male = 0.30
+# # female = 0.70
 
 # freq of visits
 max(table(data_tele$PID))
@@ -394,138 +427,266 @@ sum(table(data_tele$PID) == 1) # 45
 # more than one visit but less than 2
 sum(table(data_tele$PID) > 1 & table(data_tele$PID) <= 2) # 34
 # more than 2 visit but less than 3
-sum(table(data_tele$PID) > 2 & table(data_tele$PID) <= 3) # 57
+sum(table(data_tele$PID) > 2 & table(data_tele$PID) <= 3) # 55
 # more than 3 visit but less than 4
-sum(table(data_tele$PID) > 3 & table(data_tele$PID) <= 4) # 27
+sum(table(data_tele$PID) > 3 & table(data_tele$PID) <= 4) # 26
 # more than 4 visit but less than 5
-sum(table(data_tele$PID) > 4 & table(data_tele$PID) <= 5) # 30
+sum(table(data_tele$PID) > 4 & table(data_tele$PID) <= 5) # 15
 # more than 5
-sum(table(data_tele$PID) > 5) # 158
+sum(table(data_tele$PID) > 5) # 176
 
 45/351*100 # 12.82%
 34/351*100 # 9.69%
-57/351*100 # 16.24%
-27/351*100 # 7.69%
-30/351*100 # 8.55%
-158/351*100 # 45.01%
+55/351*100 # 15.67%
+26/351*100 # 7.41%
+15/351*100 # 4.27%
+176/351*100 # 50.14%
 
-mean(data_tele$age) # 59.81989
-sd(data_tele$age) #14.44631
+mean(data_tele$age) # 59.84993
+sd(data_tele$age) # 14.30572
 min(data_tele$age) # 9.18
 max(data_tele$age) # 92.93
 
 # age group of visit
 table(data_tele$age_group)
+# 10  11  12  13  14  15  16  17  18  19  20  21  22  23  24   3   6   7   8   9
+# 61 101 138 124 197 258 269 225 143 179 110  66  43  20   2  28  10  17   6  40
+
 table(subset(data_tele, SEX == 1)$age_group) # male
-# 10 11 12 13 14 15 16 17 18 19 20 21 22 23  3  7  8  9
-# 21 58 27 40 15 53 52 55 39 36  3  9 22  9 19 25  1 25
+# 10 11 12 13 14 15 16 17 18 19 20 21 22 23  3  6  7  8  9
+# 25 55 42 25 21 59 57 58 45 32  4  8 34  3 19  9 16  4 22
 
 table(subset(data_tele, SEX == 2)$age_group) # female
 # 10  11  12  13  14  15  16  17  18  19  20  21  22  23  24   3   6   7   8   9
-# 38  43  78 102 137 175 210 173  82 137  66  86   7  14   5   9   1   1   2  14
+# 36  46  96  99 176 199 212 167  98 147 106  58   9  17   2   9   1   1   2  18
+
+data$age_group <- as.factor(data$age_group)
+# histogram age
+ggplot(data = data_tele, aes(x = as.factor(age_des), fill = as.factor(SEX))) +
+  geom_bar(position = position_dodge(), width = 0.7) +
+  theme_minimal() +
+  xlab("Age Group") +
+  scale_fill_discrete(name = "Gender", label = c("Male", "Female")) +
+  geom_text(aes(label = stat(count)), stat = "count", position = position_dodge(w = 0.75), vjust = -1) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
 
 # use data_tele1 for diseases identification
-# remove NAs
-data_tele1 <- na.omit(data_tele) # 1802
+data_tele[rowSums(is.na(data_tele)) > 0,]
 
 # rank the diseases
-data.frame(count=sort(table(data_tele1$DIAGCODE), decreasing=TRUE))
+data.frame(count=sort(table(data_tele$DIAGCODE), decreasing=TRUE))
 
-# 1        E789        499 Other disorders of purine and pyrimidine metabolism
-# 2         I10        498 Essential (primary) hypertension
-# 3        E119        255 Non-insulin-dependent diabetes mellitus type 2 at without complications
+# 1        E789        564 Other disorders of purine and pyrimidine metabolism
+# 2         I10        564 Essential (primary) hypertension
+# 3        E119        280 Non-insulin-dependent diabetes mellitus type 2 at without complications
 # 4        Z719         82 Counselling\, unspecified
 # 5        Z133         69 Special screening examination for mental and behavioural disorders
 
 
+table(data_tele$chapter)
+table(data_tele$title)
+
+# look closely at Endocrine
+end <- data[data$title == "Endocrine, nutritional and metabolic diseases",]
+
+# remove TYPEIN = 3
+end <- end[end$TYPEIN != 3, ]
+
+end %>%
+  ggplot(aes(x = year_month, fill = TYPEIN)) +
+  geom_bar(position = position_dodge(), width = 0.5) +
+  theme_minimal() +
+  ggtitle("Endocrine, nutritional and metabolic diseases") +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  geom_text(aes(label = stat(count)), stat = "count", position = position_dodge(w = 0.75), vjust = -1) +
+  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Telemed"))
+
+# look closely at Diseases of the circulatory system
+cir <- data[data$title == "Diseases of the circulatory system",]
+
+# remove TYPEIN = 3
+cir <- cir[cir$TYPEIN != 3, ]
+
+cir %>%
+  ggplot(aes(x = year_month, fill = TYPEIN)) +
+  geom_bar(position = position_dodge(), width = 0.5) +
+  theme_minimal() +
+  ggtitle("Diseases of the circulatory system ") +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  geom_text(aes(label = stat(count)), stat = "count", position = position_dodge(w = 0.75), vjust = -1) +
+  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Telemed"))
+
+# look closely at Factors influencing health status and contact with health services
+fac <- data[data$title == "Factors influencing health status and contact with health services",]
+
+# remove TYPEIN = 3
+fac <- fac[fac$TYPEIN != 3, ]
+
+fac %>%
+  ggplot(aes(x = year_month, fill = TYPEIN)) +
+  geom_bar(position = position_dodge(), width = 0.5) +
+  theme_minimal() +
+  ggtitle("Factors influencing health status and contact with health services") +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  geom_text(aes(label = stat(count)), stat = "count", position = position_dodge(w = 0.75), vjust = -1) +
+  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Telemed"))
+
+# look closely at Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified
+symp <- data[data$title == "Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified",]
+
+# remove TYPEIN = 3
+symp <- symp[symp$TYPEIN != 3, ]
+
+symp %>%
+  ggplot(aes(x = year_month, fill = TYPEIN)) +
+  geom_bar(position = position_dodge(), width = 0.5) +
+  theme_minimal() +
+  ggtitle("Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified") +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  geom_text(aes(label = stat(count)), stat = "count", position = position_dodge(w = 0.75), vjust = -1) +
+  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Telemed"))
+
+# look closely at Mental and behavioural disorders
+men <- data[data$title == "Mental and behavioural disorders",]
+
+# remove TYPEIN = 3
+men <- men[men$TYPEIN != 3, ]
+
+men %>%
+  ggplot(aes(x = year_month, fill = TYPEIN)) +
+  geom_bar(position = position_dodge(), width = 0.5) +
+  theme_minimal() +
+  ggtitle("Mental and behavioural disorders") +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  geom_text(aes(label = stat(count)), stat = "count", position = position_dodge(w = 0.75), vjust = -1) +
+  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Telemed"))
+
 # separated by genders
-table(subset(data_tele1, SEX == 1)$chapter) # male
+table(subset(data_tele, SEX == 1)$chapter) # male
+# 2   3   4   5   9  10  11  13  14  18  21
+# 1   4 186  51 134   1   4   8  16  23 110
 
-# 3   4   5   9  10  11  13  14  18  21
-# 3 167  51 120   1   4   7  13  20 107
+table(subset(data_tele, SEX == 2)$chapter) # female
+# 1   3   4   5   6   7   9  10  11  13  14  18  19  20  21
+# 1  13 710  53   1   3 439   6   1  11  27  79   1   1 153
 
-table(subset(data_tele1, SEX == 2)$chapter) # female
-
-# 1   3   4   5   9  10  11  13  14  18  19  20  21
-# 1  10 620  51 384   6   1  10  16  68   1   1 140
+# histogram SEX
+ggplot(data = data_tele, aes(x = as.factor(chapter), fill = as.factor(SEX))) +
+  geom_bar(position = position_dodge()) +
+  theme_minimal() +
+  xlab("ICD-10 Chapter") +
+  scale_fill_discrete(name = "Gender", label = c("Male", "Female")) +
+  geom_text(aes(label = stat(count)), stat = "count", position = position_dodge(w = 0.75), vjust = -1)
 
 # find out about the patient that has the most visits
-subset(data_tele1, PID == "95623")$title %>% table()
+subset(data_tele, PID == "95623")$title %>% table()
 
 # find out about the patient that has the most visits
-subset(data_tele1, PID == "95623")$NHSO_policy_des %>% table()
+subset(data_tele, PID == "95623")$NHSO_policy_des %>% table()
 
 # 6 diseases by genders
-data_tele1 %>%
+data_tele %>%
   group_by(NHSO_policy,NHSO_policy_des,SEX) %>%
   count()
 
 # frequency of visits for the 6 diseases
-table(data_tele1$NHSO_policy)
+table(data_tele$NHSO_policy)
 
 # visits by month
-data_tele1 %>%
+data_tele %>%
   group_by(year_month) %>%
   count()
 
-policy <- data_tele1 %>%
+policy <- data_tele %>%
   group_by(NHSO_policy,NHSO_policy_des,year_month) %>%
   count()
 
 # visit freq based on month
-table(data_tele1$year_month)
+table(data_tele$year_month)
 
 
-# figure_policy1 <- policy %>%
-#   ggplot( aes(x=year_month, y=n, group=NHSO_policy_des, color=NHSO_policy_des,fill = NHSO_policy_des)) +
-#   geom_line(size = 1.5) +
-#   scale_color_viridis(discrete = TRUE) +
-#   geom_point(size = 3) +
-#   scale_color_manual(values=c("darkred", "darkblue", "darkgreen", "orange","purple","gold")) +
-#   geom_text(aes(label = scales::comma(n)), vjust = -0.5, size = 1)+
-#   theme(legend.position="none", plot.title = element_text(size=30)) +
-#   ggtitle("disease treand") +
-#   theme_minimal() +
-#   theme(axis.text = element_text(angle = 90, hjust = 1))
+policy %>%
+  ggplot( aes(x=year_month, y=n, group=NHSO_policy_des, color=NHSO_policy_des,fill = NHSO_policy_des)) +
+  geom_line(size = 1.5) +
+  scale_color_viridis(discrete = TRUE) +
+  geom_point(size = 3) +
+  scale_color_manual(values=c("darkred", "darkblue", "darkgreen", "orange","purple","gold")) +
+  geom_text(aes(label = scales::comma(n)), vjust = -0.5, size = 1) +
+  theme(legend.position="none", plot.title = element_text(size=30)) +
+  ggtitle("Disease Treands") +
+  theme_minimal() +
+  theme(axis.text = element_text(angle = 90, hjust = 1))
 
-# policy %>%
-#   ggplot( aes(x=year_month, y=n, group=NHSO_policy_des, color=NHSO_policy_des,fill = NHSO_policy_des)) +
-#   geom_col() +
-#   scale_color_viridis(discrete = TRUE) +
-#   geom_text(aes(label = scales::comma(n)), vjust = -0.5, size = 3)+
-#   theme(legend.position="none", plot.title = element_text(size=30)) +
-#   ggtitle("disease treand") +
-#   theme_minimal() +
-#   theme(axis.text = element_text(angle = 90, hjust = 1))
+# look closely at Mental health
+ment <- data[data$NHSO_policy_des == "Mental health" & data$year_month > "2022-04",]
 
-# policy2  <- policy  %>%
-#   mutate(NHSO_policy_des_2= NHSO_policy_des)
-#
-# figure_policy2  <-  policy2 %>%
-#   ggplot( aes(x=year_month, y=n)) +
-#   geom_line(data = policy2 , aes(group = NHSO_policy_des_2), color="darkblue", size=1.5, alpha=0.5) +
-#   geom_line(aes(color= NHSO_policy_des_2), color="#69b3a2", size=1.2 ) +
-#   scale_color_viridis(discrete = TRUE) +
-#   theme_minimal() +
-#   theme(
-#     legend.position="none",
-#     plot.title = element_text(size=14),
-#     panel.grid = element_blank()
-#   ) +
-#   theme(axis.text = element_text(angle = 90, hjust = 1))+
-#   ggtitle("disease trend") +
-#   facet_wrap(~ NHSO_policy_des_2)
-#
-# figure_policy1/figure_policy2
+# remove TYPEIN = 3
+ment <- ment[ment$TYPEIN != 3, ]
+
+ment %>%
+  ggplot(aes(x = year_month, fill = TYPEIN)) +
+  geom_bar(position = position_dodge()) +
+  theme_minimal() +
+  ggtitle("Mental Health") +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  geom_text(aes(label = stat(count)), stat = "count", position = position_dodge(w = 0.75), vjust = -1) +
+  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Telemed"))
+
+# look closely at Diabetes
+dia <- data[data$NHSO_policy_des == "Diabetes" & data$year_month > "2022-04",]
+
+# remove TYPEIN = 3
+dia <- dia[dia$TYPEIN != 3, ]
+
+dia %>%
+  ggplot(aes(x = year_month, fill = TYPEIN)) +
+  geom_bar(position = position_dodge()) +
+  theme_minimal() +
+  ggtitle("Diabetes") +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  geom_text(aes(label = stat(count)), stat = "count", position = position_dodge(w = 0.75), vjust = -1) +
+  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Telemed"))
+
+# look closely at Hypertension
+hyper <- data[data$NHSO_policy_des == "Hypertension" & data$year_month > "2022-04",]
+
+# remove TYPEIN = 3
+hyper <- hyper[hyper$TYPEIN != 3, ]
+
+hyper %>%
+  ggplot(aes(x = year_month, fill = TYPEIN)) +
+  geom_bar(position = position_dodge()) +
+  theme_minimal() +
+  ggtitle("Hypertension") +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  geom_text(aes(label = stat(count)), stat = "count", position = position_dodge(w = 0.75), vjust = -1) +
+  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Telemed"))
+
+# look closely at Other
+Other <- data[data$NHSO_policy_des == "Other" & data$year_month > "2022-04",]
+
+# remove TYPEIN = 3
+Other <- Other[Other$TYPEIN != 3, ]
+
+Other %>%
+  ggplot(aes(x = year_month, fill = TYPEIN)) +
+  geom_bar(position = position_dodge()) +
+  theme_minimal() +
+  ggtitle("Others") +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  geom_text(aes(label = stat(count)), stat = "count", position = position_dodge(w = 0.75), vjust = -1) +
+  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Telemed"))
+
 
 # age group - 6 disease groups
-table(data_tele1$NHSO_policy_des,data_tele1$age_group)
+table(data_tele$NHSO_policy_des,data_tele$age_group)
 
-month_visit<- data_tele1 %>%
+month_visit<- data_tele %>%
   group_by(year_month) %>%
   count()
 
-histogram <- ggplot(data = month_visit, mapping = aes(x = year_month,y = n ,fill = n)) +
+ggplot(data = month_visit, mapping = aes(x = year_month,y = n ,fill = n)) +
   geom_col() +
   theme_minimal() +
   xlab("Timeline") +
@@ -536,8 +697,6 @@ histogram <- ggplot(data = month_visit, mapping = aes(x = year_month,y = n ,fill
   theme(axis.text = element_text(angle = 90, hjust = 1))+
   # geom_smooth(aes(group = year, color = year), method = "lm", se = FALSE) +
   scale_color_manual(values = c("#69b3a2", "#F47695", "#959359"))
-
-histogram
 
 ###### compare with physical visits ######
 # based on date
@@ -550,11 +709,12 @@ tele_vs_phy_date <- ggplot(data = data, aes(x = year_month, fill = TYPEIN)) +
 tele_vs_phy_date
 
 # based on diseases ICD10
-data1 <- na.omit(data)
+data[rowSums(is.na(data)) > 0,]
+# data1 <- na.omit(data)
 
-data1$chapter <- as.numeric(data1$chapter)
+data$chapter <- as.numeric(data$chapter)
 
-tele_vs_phy_disease <- ggplot(data = data1, aes(x = as.factor(chapter), fill = TYPEIN)) +
+tele_vs_phy_disease <- ggplot(data = data, aes(x = as.factor(chapter), fill = TYPEIN)) +
   geom_bar() +
   theme_minimal() +
   xlab("Chapter") +
@@ -563,7 +723,7 @@ tele_vs_phy_disease <- ggplot(data = data1, aes(x = as.factor(chapter), fill = T
 tele_vs_phy_disease
 
 # based on sex and age
-data1_male <- subset(data1, SEX == 1)
+data1_male <- subset(data, SEX == 1)
 ggplot(data = data1_male, aes(x = age_des, fill = TYPEIN)) +
   geom_bar() +
   theme_minimal() +
@@ -571,7 +731,7 @@ ggplot(data = data1_male, aes(x = age_des, fill = TYPEIN)) +
   theme(axis.text = element_text(angle = 90, hjust = 1)) +
   scale_fill_discrete(name = "Type", label = c("Physical Visit", "Referral", "Telemed"))
 
-data1_female <- subset(data1, SEX == 2)
+data1_female <- subset(data, SEX == 2)
 ggplot(data = data1_female, aes(x = age_des, fill = TYPEIN)) +
   geom_bar() +
   theme_minimal() +
@@ -580,7 +740,7 @@ ggplot(data = data1_female, aes(x = age_des, fill = TYPEIN)) +
   scale_fill_discrete(name = "Type", label = c("Physical Visit", "Referral", "Telemed"))
 
 # based on NHSO diseases
-ggplot(data = data1, aes(x = as.factor(NHSO_policy_des), fill = TYPEIN)) +
+ggplot(data = data, aes(x = as.factor(NHSO_policy_des), fill = TYPEIN)) +
   geom_bar() +
   theme_minimal() +
   xlab("NHSO Policy") +
