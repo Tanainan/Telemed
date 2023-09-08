@@ -12,6 +12,7 @@ ipd <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/DIAGNO
 opd <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/DIAGNOSIS_OPD.xlsx"))
 adm <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/ADMISSION.xlsx"))
 
+
 # find duplicate
 duplicated(person) %>% sum # none is duplicated
 duplicated(opd) %>% sum() # 4 is duplicated
@@ -35,7 +36,7 @@ ipd$DATETIME_ADMIT <- anydate(ipd$DATETIME_ADMIT)
 # select only columns being used for each data set
 person <- person[, c("PID", "SEX", "BIRTH")]
 opd <- opd[, c("PID", "SEQ", "DIAGCODE", "DIAGTYPE", "DATE_SERV")]
-service <- service[, c("PID", "SEQ", "TYPEIN", "DATE_SERV")]
+service <- service[, c("PID", "SEQ", "TYPEIN", "DATE_SERV", "INSTYPE")]
 ipd <- ipd[, c("PID", "AN", "DATETIME_ADMIT", "DIAGCODE", "DIAGTYPE")]
 
 # change column name
@@ -66,6 +67,8 @@ ipd <- ipd[, !names(ipd) %in% c("AN")]
 ipd$PID <- as.character(ipd$PID)
 ipd$DIAGTYPE <- as.character(ipd$DIAGTYPE)
 # ipd$TYPEIN <- as.character(ipd$TYPEIN)
+
+###########################################################
 
 # merge service and opd
 data <- full_join(opd, service, by = c("SEQ" = "SEQ", "PID" = "PID", "DATE_SERV" = "DATE_SERV"))
@@ -104,7 +107,9 @@ for (i in 1:nrow(ipd)){
 }
 
 # combine ipd with na_opd_service
-ipd <- rbind(ipd, na_opd_service)
+# ipd <- rbind(ipd, na_opd_service)
+ipd <- full_join(ipd, na_opd_service, by = c("SEQ" = "SEQ", "PID" = "PID", "DATE_SERV" = "DATE_SERV",
+                                            "DIAGCODE" = "DIAGCODE", "DIAGTYPE" = "DIAGTYPE", "TYPEIN" = "TYPEIN"))
 
 rownames(ipd) <- NULL
 
@@ -165,6 +170,8 @@ for (i in 1:nrow(data)){
 
 # check for NAs
 data[rowSums(is.na(data)) > 0,]
+
+###### Start here ############################################
 
 # change date format for BIRTH
 data$BIRTH <- anydate(data$BIRTH)
@@ -748,5 +755,11 @@ ggplot(data = data, aes(x = as.factor(NHSO_policy_des), fill = TYPEIN)) +
   theme(axis.text = element_text(angle = 90, hjust = 1))
 
 
+######## Payment ########################################
+table(data_tele$INSTYPE) %>% plot()
+# 0100 1100 2301   2C 4200 6100 8200 9100
+# 1999   10    9    1    3    7    2    7
 
-
+table(data$INSTYPE) %>% plot()
+#  0100  1100  2301    2C    3D  4200  6100  8100  8200  9100    F1  NULL
+# 17370   191    97    21    12   180    32     1    21   165    10     3
