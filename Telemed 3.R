@@ -1,3 +1,10 @@
+library(readxl)
+library(tidyverse)
+library(anytime)
+library(eeptools)
+library(glue)
+library(viridis)
+
 # import data
 person <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/PERSON.xlsx"))
 service <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/SERVICE.xlsx"))
@@ -35,14 +42,23 @@ temp1$AN <- NULL
 # find NAs
 temp1[rowSums(is.na(temp1)) > 0,]
 
-# remove NAs -------------------------- will delete this line
-temp1 <- na.omit(temp1)
+# fill out missing value
+temp1[721:723, c("SEQ")] <- "3405600037"
 
 # combine opd and ipd
 temp1$PID <- as.character(temp1$PID)
 temp1$DIAGTYPE <- as.character(temp1$DIAGTYPE)
 temp2 <- full_join(temp1, opd, by = c("PID", "SEQ", "DIAGCODE", "DIAGTYPE", "DATE_SERV"))
 
+# import missingvalue_UPDATE file
+df <- read.csv("~/Downloads/Telemed/43 แฟ้ม Telemed/Missingvalue_UPDATE.csv")
+
+# change date format
+df$DATE_SERV <- as.Date(df$DATE_SERV, format = "%d/%m/%Y")
+
+df$PID <- as.character(df$PID)
+df$SEQ <- as.character(df$SEQ)
+df$DIAGTYPE <- as.character(df$DIAGTYPE)
 # combine temp2 with Missingvalues_UPDATE
 temp3 <- full_join(temp2, df, by = c("PID", "SEQ", "DIAGCODE", "DIAGTYPE", "DATE_SERV"))
 
@@ -51,9 +67,6 @@ temp4 <- full_join(temp3, service, by = c("PID", "SEQ", "DATE_SERV"))
 
 which(is.na(temp4$TYPEIN.y) == T)
 which(is.na(temp4$INSTYPE) == T)
-
-# drop NA from those columns ----------- will delete this line
-temp4 <- temp4[-c(19356, 19572),]
 
 # remove TYPEIN.x column
 temp4$TYPEIN.x <- NULL
@@ -75,3 +88,4 @@ temp5[rowSums(is.na(temp5)) > 0,]
 temp5 <- na.omit(temp5)
 
 data <- temp5
+

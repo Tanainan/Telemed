@@ -484,7 +484,7 @@ data_tele[rowSums(is.na(data_tele)) > 0,]
 # rank the diseases
 data.frame(count=sort(table(data_tele$DIAGCODE), decreasing=TRUE))
 
-# 1        E789        564 Other disorders of purine and pyrimidine metabolism
+# 1        E789        565 Other disorders of purine and pyrimidine metabolism
 # 2         I10        564 Essential (primary) hypertension
 # 3        E119        280 Non-insulin-dependent diabetes mellitus type 2 at without complications
 # 4        Z719         82 Counselling\, unspecified
@@ -554,6 +554,7 @@ symp %>%
   geom_text(aes(label = stat(count)), stat = "count", position = position_dodge(w = 0.75), vjust = -1) +
   scale_fill_discrete(name = "Type", label = c("Physical Visit", "Telemed"))
 
+
 # look closely at Mental and behavioural disorders
 men <- data[data$title == "Mental and behavioural disorders",]
 
@@ -576,7 +577,7 @@ table(subset(data_tele, SEX == 1)$chapter) # male
 
 table(subset(data_tele, SEX == 2)$chapter) # female
 # 1   3   4   5   6   7   9  10  11  13  14  18  19  20  21
-# 1  13 710  53   1   3 439   6   1  11  27  79   1   1 153
+# 1  13 711  53   1   3 439   6   1  11  27  79   1   1 153
 
 # histogram SEX
 ggplot(data = data_tele, aes(x = as.factor(chapter), fill = as.factor(SEX))) +
@@ -618,7 +619,6 @@ policy %>%
   geom_line(size = 1.5) +
   scale_color_viridis(discrete = TRUE) +
   geom_point(size = 3) +
-  scale_color_manual(values=c("darkred", "darkblue", "darkgreen", "orange","purple","gold")) +
   geom_text(aes(label = scales::comma(n)), vjust = -0.5, size = 1) +
   theme(legend.position="none", plot.title = element_text(size=30)) +
   ggtitle("Disease Treands") +
@@ -705,54 +705,54 @@ ggplot(data = month_visit, mapping = aes(x = year_month,y = n ,fill = n)) +
   # geom_smooth(aes(group = year, color = year), method = "lm", se = FALSE) +
   scale_color_manual(values = c("#69b3a2", "#F47695", "#959359"))
 
-###### compare with physical visits ######
-# based on date
-tele_vs_phy_date <- ggplot(data = data, aes(x = year_month, fill = TYPEIN)) +
-  geom_bar() +
-  theme_minimal() +
-  theme(axis.text = element_text(angle = 90, hjust = 1)) +
-  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Referral", "Telemed"))
-
-tele_vs_phy_date
-
-# based on diseases ICD10
-data[rowSums(is.na(data)) > 0,]
-# data1 <- na.omit(data)
-
-data$chapter <- as.numeric(data$chapter)
-
-tele_vs_phy_disease <- ggplot(data = data, aes(x = as.factor(chapter), fill = TYPEIN)) +
-  geom_bar() +
-  theme_minimal() +
-  xlab("Chapter") +
-  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Referral", "Telemed"))
-# geom_text(stat= "count",aes(label = ..count..), vjust = -1)
-tele_vs_phy_disease
-
-# based on sex and age
-data1_male <- subset(data, SEX == 1)
-ggplot(data = data1_male, aes(x = age_des, fill = TYPEIN)) +
-  geom_bar() +
-  theme_minimal() +
-  xlab("Age Group") +
-  theme(axis.text = element_text(angle = 90, hjust = 1)) +
-  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Referral", "Telemed"))
-
-data1_female <- subset(data, SEX == 2)
-ggplot(data = data1_female, aes(x = age_des, fill = TYPEIN)) +
-  geom_bar() +
-  theme_minimal() +
-  theme(axis.text = element_text(angle = 90, hjust = 1)) +
-  xlab("Age Group") +
-  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Referral", "Telemed"))
-
-# based on NHSO diseases
-ggplot(data = data, aes(x = as.factor(NHSO_policy_des), fill = TYPEIN)) +
-  geom_bar() +
-  theme_minimal() +
-  xlab("NHSO Policy") +
-  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Referral", "Telemed")) +
-  theme(axis.text = element_text(angle = 90, hjust = 1))
+# ###### compare with physical visits ######
+# # based on date
+# tele_vs_phy_date <- ggplot(data = data, aes(x = year_month, fill = TYPEIN)) +
+#   geom_bar() +
+#   theme_minimal() +
+#   theme(axis.text = element_text(angle = 90, hjust = 1)) +
+#   scale_fill_discrete(name = "Type", label = c("Physical Visit", "Referral", "Telemed"))
+#
+# tele_vs_phy_date
+#
+# # based on diseases ICD10
+# data[rowSums(is.na(data)) > 0,]
+# # data1 <- na.omit(data)
+#
+# data$chapter <- as.numeric(data$chapter)
+#
+# tele_vs_phy_disease <- ggplot(data = data, aes(x = as.factor(chapter), fill = TYPEIN)) +
+#   geom_bar() +
+#   theme_minimal() +
+#   xlab("Chapter") +
+#   scale_fill_discrete(name = "Type", label = c("Physical Visit", "Referral", "Telemed"))
+# # geom_text(stat= "count",aes(label = ..count..), vjust = -1)
+# tele_vs_phy_disease
+#
+# # based on sex and age
+# data1_male <- subset(data, SEX == 1)
+# ggplot(data = data1_male, aes(x = age_des, fill = TYPEIN)) +
+#   geom_bar() +
+#   theme_minimal() +
+#   xlab("Age Group") +
+#   theme(axis.text = element_text(angle = 90, hjust = 1)) +
+#   scale_fill_discrete(name = "Type", label = c("Physical Visit", "Referral", "Telemed"))
+#
+# data1_female <- subset(data, SEX == 2)
+# ggplot(data = data1_female, aes(x = age_des, fill = TYPEIN)) +
+#   geom_bar() +
+#   theme_minimal() +
+#   theme(axis.text = element_text(angle = 90, hjust = 1)) +
+#   xlab("Age Group") +
+#   scale_fill_discrete(name = "Type", label = c("Physical Visit", "Referral", "Telemed"))
+#
+# # based on NHSO diseases
+# ggplot(data = data, aes(x = as.factor(NHSO_policy_des), fill = TYPEIN)) +
+#   geom_bar() +
+#   theme_minimal() +
+#   xlab("NHSO Policy") +
+#   scale_fill_discrete(name = "Type", label = c("Physical Visit", "Referral", "Telemed")) +
+#   theme(axis.text = element_text(angle = 90, hjust = 1))
 
 
 ######## Payment ########################################
