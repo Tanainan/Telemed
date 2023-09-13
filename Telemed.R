@@ -689,7 +689,7 @@ Other %>%
 # age group - 6 disease groups
 table(data_tele$NHSO_policy_des,data_tele$age_group)
 
-month_visit<- data_tele %>%
+month_visit <- data_tele %>%
   group_by(year_month) %>%
   count()
 
@@ -763,3 +763,93 @@ table(data_tele$INSTYPE) %>% plot()
 table(data$INSTYPE) %>% plot()
 #  0100  1100  2301    2C    3D  4200  6100  8100  8200  9100    F1  NULL
 # 17370   191    97    21    12   180    32     1    21   165    10     3
+
+###### patients' journeys ##############
+data_no3 <- subset(data,TYPEIN != 3)
+ggplot(data = data_no3, aes(x=year_month, y=TYPEIN, group=PID)) +
+  geom_line(size = 0.5) +
+  geom_point(size = 0.5) +
+  theme(legend.position="none", plot.title = element_text(size=30)) +
+  ggtitle("Patients' Journey") +
+  theme_minimal() +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  xlab("Date") +
+  ylab("Type") +
+  scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
+  theme(axis.text.y = element_text(hjust = 0.5))
+
+ggplot(data = end, aes(x=year_month, y=TYPEIN, group=PID)) +
+  geom_line(size = 0.5) +
+  geom_point(size = 0.5) +
+  theme(legend.position="none", plot.title = element_text(size=30)) +
+  ggtitle("Patients' Journey: Endocrine, nutritional and metabolic diseases") +
+  theme_minimal() +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  xlab("Date") +
+  ylab("Type") +
+  scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
+  theme(axis.text.y = element_text(hjust = 0.5))
+
+ggplot(data = cir, aes(x=year_month, y=TYPEIN, group=PID)) +
+  geom_line(size = 0.5) +
+  geom_point(size = 0.5) +
+  theme(legend.position="none", plot.title = element_text(size=30)) +
+  ggtitle("Patients' Journey: Diseases of the circulatory system") +
+  theme_minimal() +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  xlab("Date") +
+  ylab("Type") +
+  scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
+  theme(axis.text.y = element_text(hjust = 0.5))
+
+ggplot(data = fac, aes(x=year_month, y=TYPEIN, group=PID)) +
+  geom_line(size = 0.5) +
+  geom_point(size = 0.5) +
+  theme(legend.position="none", plot.title = element_text(size=30)) +
+  ggtitle("Patients' Journey:
+          Factors influencing health status and contact with health services") +
+  theme_minimal() +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  xlab("Date") +
+  ylab("Type") +
+  scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
+  theme(axis.text.y = element_text(hjust = 0.5))
+
+ggplot(data = symp, aes(x=year_month, y=TYPEIN, group=PID)) +
+  geom_line(size = 0.5) +
+  geom_point(size = 0.5) +
+  theme(legend.position="none", plot.title = element_text(size=30)) +
+  ggtitle("Patients' Journey:\n
+          Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified") +
+  theme_minimal() +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  xlab("Date") +
+  ylab("Type") +
+  scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
+  theme(axis.text.y = element_text(hjust = 0.5))
+
+ggplot(data = men, aes(x=year_month, y=TYPEIN, group=PID)) +
+  geom_line(size = 0.5) +
+  geom_point(size = 0.5) +
+  theme(legend.position="none", plot.title = element_text(size=30)) +
+  ggtitle("Patients' Journey: Mental and behavioural disorders") +
+  theme_minimal() +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  xlab("Date") +
+  ylab("Type") +
+  scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
+  theme(axis.text.y = element_text(hjust = 0.5))
+
+####### compare before & after for OPD and IPD ##########
+data_opd <- subset(data_no3,type == "OPD")
+ggplot(data = data_opd, aes(x = year_month, fill = TYPEIN)) +
+  geom_bar(position = position_dodge()) +
+  theme_minimal() +
+  theme(axis.text = element_text(angle = 90, hjust = 1))
+
+data_ipd <- subset(data_no3,type == "IPD")
+ggplot(data = data_ipd, aes(x = year_month, fill = TYPEIN)) +
+  geom_bar(position = position_dodge()) +
+  theme_minimal() +
+  theme(axis.text = element_text(angle = 90, hjust = 1))
+
