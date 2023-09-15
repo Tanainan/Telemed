@@ -1,178 +1,3 @@
-library(readxl)
-library(tidyverse)
-library(anytime)
-library(eeptools)
-library(glue)
-library(viridis)
-
-# import data
-person <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/PERSON.xlsx"))
-service <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/SERVICE.xlsx"))
-ipd <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/DIAGNOSIS_IPD.xlsx"))
-opd <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/DIAGNOSIS_OPD.xlsx"))
-adm <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/ADMISSION.xlsx"))
-
-
-# find duplicate
-duplicated(person) %>% sum # none is duplicated
-duplicated(opd) %>% sum() # 4 is duplicated
-duplicated(service) %>% sum() # none is duplicated
-duplicated(ipd) %>% sum() # 1 is duplicated
-duplicated(adm) %>% sum() # none is duplicated
-
-which(duplicated(opd) == T)
-which(duplicated(ipd) == T)
-
-# remove duplicates
-opd <- unique(opd)
-ipd <- unique(ipd)
-
-# change date format
-opd$DATE_SERV <- anydate(opd$DATE_SERV)
-service$DATE_SERV <- anydate(service$DATE_SERV)
-ipd$DATETIME_ADMIT <- substr(ipd$DATETIME_ADMIT,1,8)
-ipd$DATETIME_ADMIT <- anydate(ipd$DATETIME_ADMIT)
-
-# select only columns being used for each data set
-person <- person[, c("PID", "SEX", "BIRTH")]
-opd <- opd[, c("PID", "SEQ", "DIAGCODE", "DIAGTYPE", "DATE_SERV")]
-service <- service[, c("PID", "SEQ", "TYPEIN", "DATE_SERV", "INSTYPE")]
-ipd <- ipd[, c("PID", "AN", "DATETIME_ADMIT", "DIAGCODE", "DIAGTYPE")]
-
-# change column name
-colnames(ipd)[colnames(ipd) == "DATETIME_ADMIT"] <- "DATE_SERV"
-
-ipd$SEQ <- NA
-ipd$TYPEIN <- NA
-# merge admission and ipd
-for (i in 1:nrow(ipd)){
-  for (j in 1:nrow(adm)){
-    if (adm[j, c("AN")] == ipd[i, c("AN")]){
-      ipd[i, c("SEQ", "TYPEIN")] <- adm[j, c("SEQ", "TYPEIN")]
-    }
-  }
-}
-
-
-# fill out the missing value
-rownames(ipd) <- NULL
-which(is.na(ipd$SEQ))
-ipd[721:723, c("SEQ")] <- 3405600037
-ipd[721:723, c("TYPEIN")] <- 1
-
-# remove column AN from ipd
-ipd <- ipd[, !names(ipd) %in% c("AN")]
-
-# ipd$SEQ <- as.character(ipd$SEQ)
-ipd$PID <- as.character(ipd$PID)
-ipd$DIAGTYPE <- as.character(ipd$DIAGTYPE)
-# ipd$TYPEIN <- as.character(ipd$TYPEIN)
-
-###########################################################
-
-# merge service and opd
-data <- full_join(opd, service, by = c("SEQ" = "SEQ", "PID" = "PID", "DATE_SERV" = "DATE_SERV"))
-
-na_opd_service <- data[rowSums(is.na(data)) > 0,]
-rownames(na_opd_service) <- NULL
-
-# remove missing values from the data first
-data <- na.omit(data)
-
-# import missingvalue_UPDATE file
-df <- read.csv("~/Downloads/Telemed/43 แฟ้ม Telemed/Missingvalue_UPDATE.csv")
-
-# change date format
-df$DATE_SERV <- as.Date(df$DATE_SERV, format = "%d/%m/%Y")
-
-# combine ipd and missingvalue files
-ipd <- rbind(ipd, df)
-
-# search for duplicates
-duplicated(ipd) %>% sum
-
-# remove duplicates
-ipd <- unique(ipd)
-
-# merge ipd and na_opd_service
-for (i in 1:nrow(ipd)){
-  for (j in 1:nrow(na_opd_service)){
-    if (na_opd_service[j, c("PID")] == ipd[i, c("PID")] &
-        na_opd_service[j, c("SEQ")] == ipd[i, c("SEQ")] &
-        na_opd_service[j, c("DATE_SERV")] == ipd[i, c("DATE_SERV")] &
-        na_opd_service[j, c("TYPEIN")] == ipd[i, c("TYPEIN")]){
-      na_opd_service[j, c("DIAGCODE", "DIAGTYPE")] <- ipd[i, c("DIAGCODE", "DIAGTYPE")]
-    }
-  }
-}
-
-# combine ipd with na_opd_service
-# ipd <- rbind(ipd, na_opd_service)
-ipd <- full_join(ipd, na_opd_service, by = c("SEQ" = "SEQ", "PID" = "PID", "DATE_SERV" = "DATE_SERV",
-                                            "DIAGCODE" = "DIAGCODE", "DIAGTYPE" = "DIAGTYPE", "TYPEIN" = "TYPEIN"))
-
-rownames(ipd) <- NULL
-
-# search for duplicates
-duplicated(ipd) %>% sum # 395
-
-# remove duplicates
-ipd <- unique(ipd)
-
-# merge data and ipd
-data <- full_join(data, ipd, by = c("SEQ" = "SEQ", "PID" = "PID", "DATE_SERV" = "DATE_SERV",
-                                    "DIAGCODE" = "DIAGCODE", "DIAGTYPE" = "DIAGTYPE", "TYPEIN" = "TYPEIN"))
-
-# check for NAs
-data[rowSums(is.na(data)) > 0,]
-
-which(is.na(data$DIAGCODE))
-data[19608, c("DIAGCODE", "DIAGTYPE")] <- c("Z539", "1")
-data[19610, c("DIAGCODE", "DIAGTYPE")] <- c("Z539", "1")
-
-# copy row 19609
-data <- data %>% slice(rep(19609,4)) %>%
-  bind_rows(data)
-
-data[1, c("DIAGCODE", "DIAGTYPE")] <- c("L089", "1")
-data[2, c("DIAGCODE", "DIAGTYPE")] <- c("E119", "2")
-data[3, c("DIAGCODE", "DIAGTYPE")] <- c("E789", "2")
-data[4, c("DIAGCODE", "DIAGTYPE")] <- c("I10", "2")
-data[19613, c("DIAGCODE", "DIAGTYPE")] <- c("N183", "2")
-
-
-
-# df$SEQ <- as.character(df$SEQ)
-# df$PID <- as.character(df$PID)
-# df$DIAGTYPE <- as.character(df$DIAGTYPE)
-# df$TYPEIN <- as.character(df$TYPEIN)
-#
-# # merge data and df
-# data <- full_join(data, df, by = c("SEQ" = "SEQ", "PID" = "PID", "DATE_SERV" = "DATE_SERV",
-#                                    "DIAGCODE" = "DIAGCODE", "DIAGTYPE" = "DIAGTYPE", "TYPEIN" = "TYPEIN"))
-rownames(data) <- NULL
-
-
-
-# which(complete.cases(data) == FALSE)
-
-
-data$SEX <- NA
-data$BIRTH <- NA
-# merge data and person
-for (i in 1:nrow(data)){
-  for (j in 1:nrow(person)){
-    if (person[j, c("PID")] == data[i, c("PID")]){
-     data[i, c("SEX", "BIRTH")] <-  person[j, c("SEX", "BIRTH")]
-    }
-  }
-}
-
-# check for NAs
-data[rowSums(is.na(data)) > 0,]
-
-###### Start here ############################################
-
 # change date format for BIRTH
 data$BIRTH <- anydate(data$BIRTH)
 
@@ -412,6 +237,7 @@ prop.table(table(data_tele$SEX))
 
 # gender based on person
 person <- person[person$PID %in% intersect(person$PID, data_tele_person$PID), ]
+person$BIRTH <- anydate(person$BIRTH)
 
 table(person$SEX)
 #
@@ -421,6 +247,13 @@ table(person$SEX)
 prop.table(table(person$SEX))
 # # male = 0.30
 # # female = 0.70
+
+# age based on person (for the first telemed visit)
+dt_age <- aggregate(age ~ PID, data_tele, function(x) min(x))
+mean(dt_age$age)
+sd(dt_age$age)
+min(dt_age$age)
+max(dt_age$age)
 
 # freq of visits
 max(table(data_tele$PID))
@@ -671,12 +504,12 @@ hyper %>%
   scale_fill_discrete(name = "Type", label = c("Physical Visit", "Telemed"))
 
 # look closely at Other
-Other <- data[data$NHSO_policy_des == "Other" & data$year_month > "2022-04",]
+other <- data[data$NHSO_policy_des == "Other" & data$year_month > "2022-04",]
 
 # remove TYPEIN = 3
-Other <- Other[Other$TYPEIN != 3, ]
+other <- other[other$TYPEIN != 3, ]
 
-Other %>%
+other %>%
   ggplot(aes(x = year_month, fill = TYPEIN)) +
   geom_bar(position = position_dodge()) +
   theme_minimal() +
@@ -766,9 +599,22 @@ table(data$INSTYPE) %>% plot()
 
 ###### patients' journeys ##############
 data_no3 <- subset(data,TYPEIN != 3)
-ggplot(data = data_no3, aes(x=year_month, y=TYPEIN, group=PID)) +
-  geom_line(size = 0.5) +
-  geom_point(size = 0.5) +
+ggplot(data = data_no3, mapping = aes(x=year_month, y=TYPEIN, group=PID)) +
+  geom_line(mapping = aes(x=year_month, y=TYPEIN, group=PID)) +
+  geom_point(mapping = aes(x=year_month, y=TYPEIN, group=PID)) +
+  theme(legend.position="none", plot.title = element_text(size=30)) +
+  ggtitle("Patients' Journey") +
+  theme_minimal() +
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  xlab("Date") +
+  ylab("Type") +
+  scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
+  theme(axis.text.y = element_text(hjust = 0.5))
+
+data95623 <- subset(data, PID == 95623)
+ggplot(data = data95623) +
+  geom_line(mapping = aes(x=as.factor(year_month), y=TYPEIN)) +
+  geom_point(mapping = aes(x=as.factor(year_month), y=TYPEIN)) +
   theme(legend.position="none", plot.title = element_text(size=30)) +
   ggtitle("Patients' Journey") +
   theme_minimal() +
@@ -845,11 +691,84 @@ data_opd <- subset(data_no3,type == "OPD")
 ggplot(data = data_opd, aes(x = year_month, fill = TYPEIN)) +
   geom_bar(position = position_dodge()) +
   theme_minimal() +
-  theme(axis.text = element_text(angle = 90, hjust = 1))
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  scale_fill_discrete(name = "Type", label = c("Physical Visit", "Telemed")) +
+  ggtitle("OPD Trend") +
+  geom_vline(xintercept = "2022-05")
 
 data_ipd <- subset(data_no3,type == "IPD")
 ggplot(data = data_ipd, aes(x = year_month, fill = TYPEIN)) +
   geom_bar(position = position_dodge()) +
   theme_minimal() +
-  theme(axis.text = element_text(angle = 90, hjust = 1))
+  theme(axis.text = element_text(angle = 90, hjust = 1)) +
+  scale_fill_discrete(name = "Type", label = c("Physical Visit")) +
+  ggtitle("IPD Trend") +
+  geom_vline(xintercept = "2022-05")
 
+############# average cost ##################
+
+price_opd <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/CHARGE_OPD.xlsx"))
+price_ipd <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/CHARGE_IPD.xlsx"))
+service2 <- service
+
+# remove the first 0 in price_opd$INSTYPE
+# service2$INSTYPE <- sub("^0+", "", service2$INSTYPE)
+# price_ipd$INSTYPE <- sub("^0+", "", price_ipd$INSTYPE)
+# table(p_opd$INSTYPE)
+# table(p_ipd$INSTYPE)
+
+# change column name
+colnames(price_ipd)[colnames(price_ipd) == "DATETIME_ADMIT"] <- "DATE_SERV"
+
+# change date format
+price_ipd$DATE_SERV <- substr(price_ipd$DATE_SERV,1,8)
+price_ipd$DATE_SERV <- anydate(price_ipd$DATE_SERV)
+price_opd$DATE_SERV <- anydate(price_opd$DATE_SERV)
+
+# get SEQ of IPD from admission
+p_ipd <- full_join(price_ipd, adm, by = c("AN"))
+
+# check for NAs
+# a <- p_ipd[rowSums(is.na(p_ipd)) > 0,]
+# write.csv(a, "Missing in CHARGE_IPD.csv")
+
+# get TYPEIN of opd from service
+price_opd$SEQ <- as.character(price_opd$SEQ)
+price_opd$PID <- as.character(price_opd$PID)
+price_opd$DATE_SERV <- anydate(price_opd$DATE_SERV)
+
+p_opd <- full_join(price_opd, service2, by = c("SEQ", "PID", "DATE_SERV"))
+
+p_ipd[rowSums(is.na(p_ipd)) > 0,]
+# b <- p_opd[rowSums(is.na(p_opd)) > 0,]
+#
+# write.csv(b, "Missing in CHARGE_OPD.csv")
+
+# select only columns needed
+p_ipd <- p_ipd[, c("PID", "PRICE", "SEQ", "TYPEIN", "DATE_SERV", "INSTYPE", "PAYPRICE")]
+colnames(p_opd)
+p_opd <- p_opd[, c("PID", "PRICE", "SEQ", "TYPEIN", "DATE_SERV", "INSTYPE.y", "PAYPRICE")]
+
+# rename
+colnames(p_opd)[colnames(p_opd) == "INSTYPE.y"] <- "INSTYPE"
+
+p_opd[rowSums(is.na(p_opd)) > 0,]
+
+# add type column
+p_ipd$type <- "IPD"
+p_opd$type <- "OPD"
+
+# remove NAs ------------------- will delete this line
+p_ipd <- na.omit(p_ipd)
+p_opd <- na.omit(p_opd)
+
+# combine both datasets
+price <- rbind(p_ipd, p_opd)
+
+# choose only telemed -- only OPD will appear
+price_tele <- price[price$TYPEIN == 5,]
+
+rownames(price_tele) <- NULL
+
+mean(as.numeric(price_tele$PRICE))
+mean(as.numeric(price_tele$PAYPRICE))
