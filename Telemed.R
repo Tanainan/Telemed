@@ -772,3 +772,45 @@ rownames(price_tele) <- NULL
 
 mean(as.numeric(price_tele$PRICE))
 mean(as.numeric(price_tele$PAYPRICE))
+
+
+###### before and after opd and ipd ##################
+
+# find the first date of telemed
+pid <- data_tele %>% group_by(PID)
+first_tele <- pid %>% summarise(min(DATE_SERV))
+
+# data %>% summarize(max(DATE_SERV)) # 2023-07-31
+# data %>% summarize(min(DATE_SERV)) # 2019-12-29
+first_tele$last_day <- anytime("2023-07-31")
+
+# change column name
+colnames(first_tele)[colnames(first_tele) == "min(DATE_SERV)"] <- "tele_date"
+
+# calculate numbers of days
+first_tele$after_range <- age_calc(anydate(first_tele$tele_date), anydate(first_tele$last_day), units = "days")
+
+first_tele$after_range <- parse_number(as.character(first_tele$after_range))
+
+library(lubridate)
+
+first_tele$first_day <- ymd(first_tele$tele_date) - days(first_tele$after_range)
+
+# first_tele %>% summarize(min(before)) # 2021-03-05
+
+first_tele$int_before <- interval(first_tele$first_day, first_tele$tele_date - 1)
+first_tele$int_after <- interval(first_tele$tele_date + 1, first_tele$last_day)
+
+# select only physical visit from the data
+data_phy <- subset(data, TYPEIN == 1)
+# add back to the data
+data_date <- full_join(data_phy, first_tele, by = c("PID"))
+
+# count how many days for before
+a <- data_date %>%
+  group_by(PID) %>%
+  mutate(Count_before = sum(as_date(DATE_SERV) %within% int_before)) %>%
+  mutate(Count_after = sum(as_date(DATE_SERV) %within% int_after))
+
+
+
