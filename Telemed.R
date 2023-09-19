@@ -11,76 +11,63 @@ data$year_month <- format(data$DATE_SERV, "%Y-%m")
 # categorize ages into groups
 data <- data %>%
   mutate(age_group = case_when(
-    age >=0 & age <4 ~ "1",
-    age >=4 & age <8 ~ "2",
-    age >=8 & age <12 ~ "3",
-    age >=12 & age <16~ "4",
-    age >=16 & age <20~ "5",
-    age >=20 & age <24~ "6",
-    age >=24 & age <28~ "7",
-    age >=28 & age <32~ "8",
-    age >=32 & age <36~ "9",
-    age >=36 & age <40~ "10",
-    age >=40 & age <44~ "11",
-    age >=44 & age <48~ "12",
-    age >=48 & age <52~ "13",
-    age >=52 & age <56~ "14",
-    age >=56 & age <60~ "15",
-    age >=60 & age <64~ "16",
-    age >=64 & age <68~ "17",
-    age >=68 & age <72~ "18",
-    age >=72 & age <76~ "19",
-    age >=76 & age <80~ "20",
-    age >=80 & age <84~ "21",
-    age >=84 & age <88~ "22",
-    age >=88 & age <92~ "23",
-    age >=92 & age <96~ "24",
-    age >=96 & age <100~ "25"
+    age >=0 & age <5 ~ "1",
+    age >=5 & age <10 ~ "2",
+    age >=10 & age <15 ~ "3",
+    age >=15 & age <20~ "4",
+    age >=20 & age <25~ "5",
+    age >=25 & age <30~ "6",
+    age >=30 & age <35~ "7",
+    age >=35 & age <40~ "8",
+    age >=40 & age <45~ "9",
+    age >=45 & age <50~ "10",
+    age >=50 & age <55~ "11",
+    age >=55 & age <60~ "12",
+    age >=60 & age <65~ "13",
+    age >=65 & age <70~ "14",
+    age >=70 & age <75~ "15",
+    age >=75 & age <80~ "16",
+    age >=80 & age <85~ "17",
+    age >=85 & age <90~ "18",
+    age >=90 & age <95~ "19",
+    age >=95 & age <100~ "20"
   ))
 
 data <- data %>%
   mutate(age_des = case_when(
     age_group == 1 ~ "0-4 y/o",
-    age_group == 2 ~ "4-8 y/o",
-    age_group == 3 ~ "8-12 y/o",
-    age_group == 4 ~ "12-16 y/o",
-    age_group == 5 ~ "16-20 y/o",
-    age_group == 6 ~ "20-24 y/o",
-    age_group == 7 ~ "24-28 y/o",
-    age_group == 8 ~ "28-32 y/o",
-    age_group == 9 ~ "32-36 y/o",
-    age_group == 10 ~ "36-40 y/o",
-    age_group == 11 ~ "40-44 y/o",
-    age_group == 12 ~ "44-48 y/o",
-    age_group == 13 ~ "48-52 y/o",
-    age_group == 14 ~ "52-56 y/o",
-    age_group == 15 ~ "56-60 y/o",
-    age_group == 16 ~ "60-64 y/o",
-    age_group == 17 ~ "64-68 y/o",
-    age_group == 18 ~ "68-72 y/o",
-    age_group == 19 ~ "72-76 y/o",
-    age_group == 20 ~ "76-80 y/o",
-    age_group == 21 ~ "80-84 y/o",
-    age_group == 22 ~ "84-88 y/o",
-    age_group == 23 ~ "88-92 y/o",
-    age_group == 24 ~ "92-96 y/o",
-    age_group == 25 ~ "96-100 y/o"))
+    age_group == 2 ~ "5-9 y/o",
+    age_group == 3 ~ "10-14 y/o",
+    age_group == 4 ~ "15-19 y/o",
+    age_group == 5 ~ "20-24 y/o",
+    age_group == 6 ~ "25-29 y/o",
+    age_group == 7 ~ "30-34 y/o",
+    age_group == 8 ~ "35-39 y/o",
+    age_group == 9 ~ "40-44 y/o",
+    age_group == 10 ~ "45-49 y/o",
+    age_group == 11 ~ "50-54 y/o",
+    age_group == 12 ~ "55-59 y/o",
+    age_group == 13 ~ "60-64 y/o",
+    age_group == 14 ~ "65-69 y/o",
+    age_group == 15 ~ "70-74 y/o",
+    age_group == 16 ~ "75-79 y/o",
+    age_group == 17 ~ "80-84 y/o",
+    age_group == 18 ~ "85-89 y/o",
+    age_group == 19 ~ "90-94 y/o",
+    age_group == 20 ~ "95-99 y/o"))
 
 data <- data %>%
   mutate(age_des = factor(age_des,
-                          levels = c("0-4 y/o","4-8 y/o",
-                                     "8-12 y/o","12-16 y/o",
-                                     "16-20 y/o","20-24 y/o",
-                                     "24-28 y/o","28-32 y/o",
-                                     "32-36 y/o","36-40 y/o",
-                                     "40-44 y/o","44-48 y/o",
-                                     "48-52 y/o","52-56 y/o",
-                                     "56-60 y/o","60-64 y/o",
-                                     "64-68 y/o","68-72 y/o",
-                                     "72-76 y/o","76-80 y/o",
-                                     "80-84 y/o","84-88 y/o",
-                                     "88-92 y/o","92-96 y/o",
-                                     "96-100 y/o"),
+                          levels = c("0-4 y/o","5-9 y/o",
+                                     "10-14 y/o","15-19 y/o",
+                                     "20-24 y/o","25-29 y/o",
+                                     "30-34 y/o","35-39 y/o",
+                                     "40-44 y/o","45-49 y/o",
+                                     "50-54 y/o","55-59 y/o",
+                                     "60-64 y/o","65-69 y/o",
+                                     "70-74 y/o","75-79 y/o",
+                                     "80-84 y/o","85-89 y/o",
+                                     "90-94 y/o","95-99 y/o"),
                           ordered = TRUE))
 
 # sort DIAGCODE
@@ -219,6 +206,12 @@ data <- data[data$PID %in% intersect(person$PID, data_tele_person$PID), ]
 # on average, patients visits
 nrow(data_tele)/n_distinct(data_tele$PID) # 5.803419
 
+# SD
+sd_tele <- data_tele %>% group_by(PID) %>%
+  summarise(n = n())
+
+sd(sd_tele$n) # 4.0174
+
 # reset rownames
 rownames(data_tele) <- NULL
 
@@ -289,16 +282,16 @@ max(data_tele$age) # 92.93
 
 # age group of visit
 table(data_tele$age_group)
-# 10  11  12  13  14  15  16  17  18  19  20  21  22  23  24   3   6   7   8   9
-# 61 101 138 124 197 258 269 225 143 179 110  66  43  20   2  28  10  17   6  40
+# 10  11  12  13  14  15  16  17  18  19   2   3   5   6   7   8   9
+# 163 179 358 318 229 250 130  81  38  12  25   3  14  13  37  70 118
 
 table(subset(data_tele, SEX == 1)$age_group) # male
-# 10 11 12 13 14 15 16 17 18 19 20 21 22 23  3  6  7  8  9
-# 25 55 42 25 21 59 57 58 45 32  4  8 34  3 19  9 16  4 22
+# 10 11 12 13 14 15 16 17 18  2  3  5  6  7  8  9
+# 45 32 66 66 66 55  9 17 28 16  3 12 13 26 25 59
 
 table(subset(data_tele, SEX == 2)$age_group) # female
-# 10  11  12  13  14  15  16  17  18  19  20  21  22  23  24   3   6   7   8   9
-# 36  46  96  99 176 199 212 167  98 147 106  58   9  17   2   9   1   1   2  18
+# 10  11  12  13  14  15  16  17  18  19   2   5   7   8   9
+# 118 147 292 252 163 195 121  64  10  12   9   2  11  45  59
 
 data$age_group <- as.factor(data$age_group)
 # histogram age
@@ -323,6 +316,7 @@ data.frame(count=sort(table(data_tele$DIAGCODE), decreasing=TRUE))
 # 4        Z719         82 Counselling\, unspecified
 # 5        Z133         69 Special screening examination for mental and behavioural disorders
 
+data.frame(count=sort(prop.table(table(data_tele$DIAGCODE)), decreasing=TRUE))
 
 table(data_tele$chapter)
 table(data_tele$title)
@@ -729,7 +723,7 @@ price_opd$DATE_SERV <- anydate(price_opd$DATE_SERV)
 p_ipd <- full_join(price_ipd, adm, by = c("AN"))
 
 # check for NAs
-# a <- p_ipd[rowSums(is.na(p_ipd)) > 0,]
+p_ipd[rowSums(is.na(p_ipd)) > 0,]
 # write.csv(a, "Missing in CHARGE_IPD.csv")
 
 # get TYPEIN of opd from service
@@ -739,8 +733,7 @@ price_opd$DATE_SERV <- anydate(price_opd$DATE_SERV)
 
 p_opd <- full_join(price_opd, service2, by = c("SEQ", "PID", "DATE_SERV"))
 
-p_ipd[rowSums(is.na(p_ipd)) > 0,]
-# b <- p_opd[rowSums(is.na(p_opd)) > 0,]
+p_opd[rowSums(is.na(p_opd)) > 0,]
 #
 # write.csv(b, "Missing in CHARGE_OPD.csv")
 
@@ -770,8 +763,8 @@ price_tele <- price[price$TYPEIN == 5,]
 
 rownames(price_tele) <- NULL
 
-mean(as.numeric(price_tele$PRICE))
-mean(as.numeric(price_tele$PAYPRICE))
+mean(as.numeric(price_tele$PRICE)) # 295.4417
+mean(as.numeric(price_tele$PAYPRICE)) # 0.02295285
 
 
 ###### before and after opd and ipd ##################
@@ -803,14 +796,51 @@ first_tele$int_after <- interval(first_tele$tele_date + 1, first_tele$last_day)
 
 # select only physical visit from the data
 data_phy <- subset(data, TYPEIN == 1)
+
 # add back to the data
 data_date <- full_join(data_phy, first_tele, by = c("PID"))
 
-# count how many days for before
-a <- data_date %>%
+# separate opd and ipd
+data_opd <- subset(data_date, type == "OPD")
+data_ipd <- subset(data_date, type == "IPD")
+
+# count how many physical visits for before and after telemed
+a_opd <- data_opd %>%
   group_by(PID) %>%
-  mutate(Count_before = sum(as_date(DATE_SERV) %within% int_before)) %>%
-  mutate(Count_after = sum(as_date(DATE_SERV) %within% int_after))
+  mutate(count_before = sum(as_date(DATE_SERV) %within% int_before)) %>%
+  mutate(count_after = sum(as_date(DATE_SERV) %within% int_after))
 
+a_ipd <- data_ipd %>%
+  group_by(PID) %>%
+  mutate(count_before = sum(as_date(DATE_SERV) %within% int_before)) %>%
+  mutate(count_after = sum(as_date(DATE_SERV) %within% int_after))
 
+b_opd <- a_opd %>%
+  group_by(PID) %>%
+  distinct(count_before, count_after)
 
+b_ipd <- a_ipd %>%
+  group_by(PID) %>%
+  distinct(count_before, count_after)
+
+# opd
+mean(b_opd$count_before, na.rm = T)
+sd(b_opd$count_before, na.rm = T)
+max(b_opd$count_before, na.rm = T)
+min(b_opd$count_before, na.rm = T)
+
+mean(b_opd$count_after, na.rm = T)
+sd(b_opd$count_after, na.rm = T)
+max(b_opd$count_after, na.rm = T)
+min(b_opd$count_after, na.rm = T)
+
+# ipd
+mean(b_ipd$count_before, na.rm = T)
+sd(b_ipd$count_before, na.rm = T)
+max(b_ipd$count_before, na.rm = T)
+min(b_ipd$count_before, na.rm = T)
+
+mean(b_ipd$count_after, na.rm = T)
+sd(b_ipd$count_after, na.rm = T)
+max(b_ipd$count_after, na.rm = T)
+min(b_ipd$count_after, na.rm = T)
