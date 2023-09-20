@@ -248,6 +248,92 @@ sd(dt_age$age)
 min(dt_age$age)
 max(dt_age$age)
 
+dt_sex <- data_tele[, c("PID", "SEX")]
+dt_age <- left_join(dt_age, dt_sex, by = c("PID"))
+
+# remove duplicates
+dt_age <- unique(dt_age)
+
+dt_age <- dt_age %>%
+  mutate(age_group = case_when(
+    age >=0 & age <5 ~ "1",
+    age >=5 & age <10 ~ "2",
+    age >=10 & age <15 ~ "3",
+    age >=15 & age <20~ "4",
+    age >=20 & age <25~ "5",
+    age >=25 & age <30~ "6",
+    age >=30 & age <35~ "7",
+    age >=35 & age <40~ "8",
+    age >=40 & age <45~ "9",
+    age >=45 & age <50~ "10",
+    age >=50 & age <55~ "11",
+    age >=55 & age <60~ "12",
+    age >=60 & age <65~ "13",
+    age >=65 & age <70~ "14",
+    age >=70 & age <75~ "15",
+    age >=75 & age <80~ "16",
+    age >=80 & age <85~ "17",
+    age >=85 & age <90~ "18",
+    age >=90 & age <95~ "19",
+    age >=95 & age <100~ "20"
+  ))
+
+dt_age <- dt_age %>%
+  mutate(age_des = case_when(
+    age_group == 1 ~ "0-4 y/o",
+    age_group == 2 ~ "5-9 y/o",
+    age_group == 3 ~ "10-14 y/o",
+    age_group == 4 ~ "15-19 y/o",
+    age_group == 5 ~ "20-24 y/o",
+    age_group == 6 ~ "25-29 y/o",
+    age_group == 7 ~ "30-34 y/o",
+    age_group == 8 ~ "35-39 y/o",
+    age_group == 9 ~ "40-44 y/o",
+    age_group == 10 ~ "45-49 y/o",
+    age_group == 11 ~ "50-54 y/o",
+    age_group == 12 ~ "55-59 y/o",
+    age_group == 13 ~ "60-64 y/o",
+    age_group == 14 ~ "65-69 y/o",
+    age_group == 15 ~ "70-74 y/o",
+    age_group == 16 ~ "75-79 y/o",
+    age_group == 17 ~ "80-84 y/o",
+    age_group == 18 ~ "85-89 y/o",
+    age_group == 19 ~ "90-94 y/o",
+    age_group == 20 ~ "95-99 y/o"))
+
+dt_age <- dt_age %>%
+  mutate(age_des = factor(age_des,
+                          levels = c("0-4 y/o","5-9 y/o",
+                                     "10-14 y/o","15-19 y/o",
+                                     "20-24 y/o","25-29 y/o",
+                                     "30-34 y/o","35-39 y/o",
+                                     "40-44 y/o","45-49 y/o",
+                                     "50-54 y/o","55-59 y/o",
+                                     "60-64 y/o","65-69 y/o",
+                                     "70-74 y/o","75-79 y/o",
+                                     "80-84 y/o","85-89 y/o",
+                                     "90-94 y/o","95-99 y/o"),
+                          ordered = TRUE))
+
+table(subset(dt_age, SEX == 1)$age_group) # male
+round(prop.table(table(subset(dt_age, SEX == 1)$age_group)), 2)
+
+table(subset(dt_age, SEX == 2)$age_group) # female
+round(prop.table(table(subset(dt_age, SEX == 2)$age_group)), 2)
+
+# NHSO age group
+dt_age <- dt_age %>%
+  mutate(age_group_NHSO = case_when(
+    age >=0 & age <=6 ~ "1",
+    age >6 & age<= 25 ~ "2",
+    age >25 & age<= 60 ~ "3",
+    age >= 60 ~ "4"
+  ))
+
+table(dt_age$age_group_NHSO)
+prop.table(table(dt_age$age_group_NHSO)) %>% round(2)
+
+
 # freq of visits
 max(table(data_tele$PID))
 # the most freq = 21
