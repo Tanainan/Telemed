@@ -223,7 +223,7 @@ table(data_tele$SEX)
 
 # pie(table(data_tele$SEX), c("Male", "Female"))
 
-prop.table(table(data_tele$SEX))
+prop.table(table(data_tele$SEX))*100
 
 # male = 0.26
 # female = 0.74
@@ -237,9 +237,7 @@ table(person$SEX)
 # # male = 104
 # # female = 247
 #
-prop.table(table(person$SEX))
-# # male = 0.30
-# # female = 0.70
+prop.table(table(person$SEX))*100
 
 # age based on person (for the first telemed visit)
 dt_age <- aggregate(age ~ PID, data_tele, function(x) min(x))
@@ -316,10 +314,10 @@ dt_age <- dt_age %>%
                           ordered = TRUE))
 
 table(subset(dt_age, SEX == 1)$age_group) # male
-round(prop.table(table(subset(dt_age, SEX == 1)$age_group)), 2)
+round(prop.table(table(subset(dt_age, SEX == 1)$age_group))*100, 2)
 
 table(subset(dt_age, SEX == 2)$age_group) # female
-round(prop.table(table(subset(dt_age, SEX == 2)$age_group)), 2)
+round(prop.table(table(subset(dt_age, SEX == 2)$age_group))*100, 2)
 
 # NHSO age group
 dt_age <- dt_age %>%
@@ -331,7 +329,7 @@ dt_age <- dt_age %>%
   ))
 
 table(dt_age$age_group_NHSO)
-prop.table(table(dt_age$age_group_NHSO)) %>% round(2)
+prop.table(table(dt_age$age_group_NHSO))*100 %>% round(2)
 
 
 # freq of visits
@@ -382,6 +380,15 @@ table(subset(data_tele, SEX == 2)$age_group) # female
 data$age_group <- as.factor(data$age_group)
 # histogram age
 ggplot(data = data_tele, aes(x = as.factor(age_des), fill = as.factor(SEX))) +
+  geom_bar(position = position_dodge(), width = 0.7) +
+  theme_minimal() +
+  xlab("Age Group") +
+  scale_fill_discrete(name = "Gender", label = c("Male", "Female")) +
+  geom_text(aes(label = stat(count)), stat = "count", position = position_dodge(w = 0.75), vjust = -1) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# unique ID age by gender
+ggplot(data = dt_age, aes(x = as.factor(age_des), fill = as.factor(SEX))) +
   geom_bar(position = position_dodge(), width = 0.7) +
   theme_minimal() +
   xlab("Age Group") +
@@ -514,10 +521,13 @@ data_tele %>%
 # frequency of visits for the 6 diseases
 table(data_tele$NHSO_policy)
 
-# visits by month
+# visits by mont
 data_tele %>%
   group_by(year_month) %>%
   count()
+
+# percent visit each month
+prop.table(table(data_tele$year_month))*100
 
 policy <- data_tele %>%
   group_by(NHSO_policy,NHSO_policy_des,year_month) %>%
@@ -679,92 +689,80 @@ table(data$INSTYPE) %>% plot()
 
 ###### patients' journeys ##############
 data_no3 <- subset(data,TYPEIN != 3)
-ggplot(data = data_no3, mapping = aes(x=year_month, y=TYPEIN, group=PID)) +
-  geom_line(mapping = aes(x=year_month, y=TYPEIN, group=PID)) +
-  geom_point(mapping = aes(x=year_month, y=TYPEIN, group=PID)) +
-  theme(legend.position="none", plot.title = element_text(size=30)) +
-  ggtitle("Patients' Journey") +
-  theme_minimal() +
-  theme(axis.text = element_text(angle = 90, hjust = 1)) +
-  xlab("Date") +
-  ylab("Type") +
-  scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
-  theme(axis.text.y = element_text(hjust = 0.5))
-
-data95623 <- subset(data, PID == 95623)
-ggplot(data = data95623) +
-  geom_line(mapping = aes(x=as.factor(year_month), y=TYPEIN)) +
-  geom_point(mapping = aes(x=as.factor(year_month), y=TYPEIN)) +
-  theme(legend.position="none", plot.title = element_text(size=30)) +
-  ggtitle("Patients' Journey") +
-  theme_minimal() +
-  theme(axis.text = element_text(angle = 90, hjust = 1)) +
-  xlab("Date") +
-  ylab("Type") +
-  scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
-  theme(axis.text.y = element_text(hjust = 0.5))
-
-ggplot(data = end, aes(x=year_month, y=TYPEIN, group=PID)) +
-  geom_line(size = 0.5) +
-  geom_point(size = 0.5) +
-  theme(legend.position="none", plot.title = element_text(size=30)) +
-  ggtitle("Patients' Journey: Endocrine, nutritional and metabolic diseases") +
-  theme_minimal() +
-  theme(axis.text = element_text(angle = 90, hjust = 1)) +
-  xlab("Date") +
-  ylab("Type") +
-  scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
-  theme(axis.text.y = element_text(hjust = 0.5))
-
-ggplot(data = cir, aes(x=year_month, y=TYPEIN, group=PID)) +
-  geom_line(size = 0.5) +
-  geom_point(size = 0.5) +
-  theme(legend.position="none", plot.title = element_text(size=30)) +
-  ggtitle("Patients' Journey: Diseases of the circulatory system") +
-  theme_minimal() +
-  theme(axis.text = element_text(angle = 90, hjust = 1)) +
-  xlab("Date") +
-  ylab("Type") +
-  scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
-  theme(axis.text.y = element_text(hjust = 0.5))
-
-ggplot(data = fac, aes(x=year_month, y=TYPEIN, group=PID)) +
-  geom_line(size = 0.5) +
-  geom_point(size = 0.5) +
-  theme(legend.position="none", plot.title = element_text(size=30)) +
-  ggtitle("Patients' Journey:
-          Factors influencing health status and contact with health services") +
-  theme_minimal() +
-  theme(axis.text = element_text(angle = 90, hjust = 1)) +
-  xlab("Date") +
-  ylab("Type") +
-  scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
-  theme(axis.text.y = element_text(hjust = 0.5))
-
-ggplot(data = symp, aes(x=year_month, y=TYPEIN, group=PID)) +
-  geom_line(size = 0.5) +
-  geom_point(size = 0.5) +
-  theme(legend.position="none", plot.title = element_text(size=30)) +
-  ggtitle("Patients' Journey:\n
-          Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified") +
-  theme_minimal() +
-  theme(axis.text = element_text(angle = 90, hjust = 1)) +
-  xlab("Date") +
-  ylab("Type") +
-  scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
-  theme(axis.text.y = element_text(hjust = 0.5))
-
-ggplot(data = men, aes(x=year_month, y=TYPEIN, group=PID)) +
-  geom_line(size = 0.5) +
-  geom_point(size = 0.5) +
-  theme(legend.position="none", plot.title = element_text(size=30)) +
-  ggtitle("Patients' Journey: Mental and behavioural disorders") +
-  theme_minimal() +
-  theme(axis.text = element_text(angle = 90, hjust = 1)) +
-  xlab("Date") +
-  ylab("Type") +
-  scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
-  theme(axis.text.y = element_text(hjust = 0.5))
+# ggplot(data = data_no3, mapping = aes(x=year_month, y=TYPEIN, group=PID)) +
+#   geom_line(mapping = aes(x=year_month, y=TYPEIN, group=PID)) +
+#   geom_point(mapping = aes(x=year_month, y=TYPEIN, group=PID)) +
+#   theme(legend.position="none", plot.title = element_text(size=30)) +
+#   ggtitle("Patients' Journey") +
+#   theme_minimal() +
+#   theme(axis.text = element_text(angle = 90, hjust = 1)) +
+#   xlab("Date") +
+#   ylab("Type") +
+#   scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
+#   theme(axis.text.y = element_text(hjust = 0.5))
+#
+#
+# ggplot(data = end, aes(x=year_month, y=TYPEIN, group=PID)) +
+#   geom_line(size = 0.5) +
+#   geom_point(size = 0.5) +
+#   theme(legend.position="none", plot.title = element_text(size=30)) +
+#   ggtitle("Patients' Journey: Endocrine, nutritional and metabolic diseases") +
+#   theme_minimal() +
+#   theme(axis.text = element_text(angle = 90, hjust = 1)) +
+#   xlab("Date") +
+#   ylab("Type") +
+#   scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
+#   theme(axis.text.y = element_text(hjust = 0.5))
+#
+# ggplot(data = cir, aes(x=year_month, y=TYPEIN, group=PID)) +
+#   geom_line(size = 0.5) +
+#   geom_point(size = 0.5) +
+#   theme(legend.position="none", plot.title = element_text(size=30)) +
+#   ggtitle("Patients' Journey: Diseases of the circulatory system") +
+#   theme_minimal() +
+#   theme(axis.text = element_text(angle = 90, hjust = 1)) +
+#   xlab("Date") +
+#   ylab("Type") +
+#   scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
+#   theme(axis.text.y = element_text(hjust = 0.5))
+#
+# ggplot(data = fac, aes(x=year_month, y=TYPEIN, group=PID)) +
+#   geom_line(size = 0.5) +
+#   geom_point(size = 0.5) +
+#   theme(legend.position="none", plot.title = element_text(size=30)) +
+#   ggtitle("Patients' Journey:
+#           Factors influencing health status and contact with health services") +
+#   theme_minimal() +
+#   theme(axis.text = element_text(angle = 90, hjust = 1)) +
+#   xlab("Date") +
+#   ylab("Type") +
+#   scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
+#   theme(axis.text.y = element_text(hjust = 0.5))
+#
+# ggplot(data = symp, aes(x=year_month, y=TYPEIN, group=PID)) +
+#   geom_line(size = 0.5) +
+#   geom_point(size = 0.5) +
+#   theme(legend.position="none", plot.title = element_text(size=30)) +
+#   ggtitle("Patients' Journey:\n
+#           Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified") +
+#   theme_minimal() +
+#   theme(axis.text = element_text(angle = 90, hjust = 1)) +
+#   xlab("Date") +
+#   ylab("Type") +
+#   scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
+#   theme(axis.text.y = element_text(hjust = 0.5))
+#
+# ggplot(data = men, aes(x=year_month, y=TYPEIN, group=PID)) +
+#   geom_line(size = 0.5) +
+#   geom_point(size = 0.5) +
+#   theme(legend.position="none", plot.title = element_text(size=30)) +
+#   ggtitle("Patients' Journey: Mental and behavioural disorders") +
+#   theme_minimal() +
+#   theme(axis.text = element_text(angle = 90, hjust = 1)) +
+#   xlab("Date") +
+#   ylab("Type") +
+#   scale_y_discrete(labels = c("Physical Visit", "Telemedicine")) +
+#   theme(axis.text.y = element_text(hjust = 0.5))
 
 ####### compare before & after for OPD and IPD ##########
 data_opd <- subset(data_no3,type == "OPD")
@@ -850,7 +848,21 @@ price_tele <- price[price$TYPEIN == 5,]
 rownames(price_tele) <- NULL
 
 mean(as.numeric(price_tele$PRICE)) # 295.4417
+sd(as.numeric(price_tele$PRICE))
+max(as.numeric(price_tele$PRICE))
+min(as.numeric(price_tele$PRICE))
+getmode <- function(v) {
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+getmode(as.numeric(price_tele$PRICE))
+
+
 mean(as.numeric(price_tele$PAYPRICE)) # 0.02295285
+sd(as.numeric(price_tele$PAYPRICE))
+max(as.numeric(price_tele$PAYPRICE))
+min(as.numeric(price_tele$PAYPRICE))
+getmode(as.numeric(price_tele$PAYPRICE))
 
 
 ###### before and after opd and ipd ##################
@@ -890,6 +902,10 @@ data_date <- full_join(data_phy, first_tele, by = c("PID"))
 data_opd <- subset(data_date, type == "OPD")
 data_ipd <- subset(data_date, type == "IPD")
 
+# count how many unique patients
+data_opd$PID %>% n_distinct
+data_ipd$PID %>% n_distinct
+
 # count how many physical visits for before and after telemed
 a_opd <- data_opd %>%
   group_by(PID) %>%
@@ -915,6 +931,7 @@ sd(b_opd$count_before, na.rm = T)
 max(b_opd$count_before, na.rm = T)
 min(b_opd$count_before, na.rm = T)
 
+
 mean(b_opd$count_after, na.rm = T)
 sd(b_opd$count_after, na.rm = T)
 max(b_opd$count_after, na.rm = T)
@@ -930,3 +947,72 @@ mean(b_ipd$count_after, na.rm = T)
 sd(b_ipd$count_after, na.rm = T)
 max(b_ipd$count_after, na.rm = T)
 min(b_ipd$count_after, na.rm = T)
+
+######## before and after opd and ipd all ########
+all_visit <- data_phy %>% group_by(PID) %>%
+  summarize(min(DATE_SERV))
+
+all_visit$last_day <- anytime("2023-07-31")
+
+# change column name
+colnames(all_visit)[colnames(all_visit) == "min(DATE_SERV)"] <- "first_day"
+
+first_tele2 <- first_tele[, c("PID", "tele_date")]
+all_visit <- full_join(all_visit, first_tele2, by = c("PID"))
+
+all_visit$int_before_all <- interval(all_visit$first_day, all_visit$tele_date - 1)
+all_visit$int_after_all <- interval(all_visit$tele_date + 1, all_visit$last_day)
+
+# add back to the data
+data_date_all <- full_join(data_phy, all_visit, by = c("PID"))
+
+# separate opd and ipd
+data_opd_all <- subset(data_date_all, type == "OPD")
+data_ipd_all <- subset(data_date_all, type == "IPD")
+
+# count how many unique patients
+data_opd_all$PID %>% n_distinct
+data_ipd_all$PID %>% n_distinct
+
+# count how many physical visits for before and after telemed
+a_opd_all <- data_opd_all %>%
+  group_by(PID) %>%
+  mutate(count_before = sum(as_date(DATE_SERV) %within% int_before_all)) %>%
+  mutate(count_after = sum(as_date(DATE_SERV) %within% int_after_all))
+
+a_ipd_all <- data_ipd_all %>%
+  group_by(PID) %>%
+  mutate(count_before = sum(as_date(DATE_SERV) %within% int_before_all)) %>%
+  mutate(count_after = sum(as_date(DATE_SERV) %within% int_after_all))
+
+b_opd_all <- a_opd_all %>%
+  group_by(PID) %>%
+  distinct(count_before, count_after)
+
+b_ipd_all <- a_ipd_all %>%
+  group_by(PID) %>%
+  distinct(count_before, count_after)
+
+# opd
+mean(b_opd_all$count_before, na.rm = T)
+sd(b_opd_all$count_before, na.rm = T)
+max(b_opd_all$count_before, na.rm = T)
+min(b_opd_all$count_before, na.rm = T)
+
+
+mean(b_opd_all$count_after, na.rm = T)
+sd(b_opd_all$count_after, na.rm = T)
+max(b_opd_all$count_after, na.rm = T)
+min(b_opd_all$count_after, na.rm = T)
+
+# ipd
+mean(b_ipd_all$count_before, na.rm = T)
+sd(b_ipd_all$count_before, na.rm = T)
+max(b_ipd_all$count_before, na.rm = T)
+min(b_ipd_all$count_before, na.rm = T)
+
+mean(b_ipd_all$count_after, na.rm = T)
+sd(b_ipd_all$count_after, na.rm = T)
+max(b_ipd_all$count_after, na.rm = T)
+min(b_ipd_all$count_after, na.rm = T)
+
