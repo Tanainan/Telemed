@@ -4,6 +4,7 @@ library(anytime)
 library(eeptools)
 library(glue)
 library(viridis)
+library(lubridate)
 
 # import data
 person <- data.frame(read_excel("~/Downloads/Telemed/43 แฟ้ม Telemed/PERSON.xlsx"))
