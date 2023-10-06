@@ -182,17 +182,17 @@ data %>%
 ################################################
 # select only telemed (typein = 5)
 data_tele <- data[data$TYPEIN == 5,]
-data_tele2 <- data[data$TYPEIN == 5 & data$DIAGTYPE == 1,]
+data_tele2 <- data[data$TYPEIN == 5 & data$DIAGTYPE == 1 & data$DIAGCODE != "Z539",]
 
-# total telemed = 809
+# total telemed = 758
 
 
 # unique ID
-n_distinct(data_tele$PID) # 351
+n_distinct(data_tele2$PID) # 338
 
 # since the data is supposed to record patients who used telemedicine (not the whole patients in the hospital)
 # we see which PID from the PERSON file do not have TYPEIN = 5 at all
-data_tele_person <- data.frame(PID = unique(data_tele$PID))
+data_tele_person <- data.frame(PID = unique(data_tele2$PID))
 missing_TYPEIN_5 <- data.frame(PID = setdiff(person$PID, data_tele_person$PID))
 
 # we remove patients who never use telemedicine from the data file
@@ -201,27 +201,28 @@ data <- data[data$PID %in% intersect(person$PID, data_tele_person$PID), ]
 # table(data11$PID)
 
 # on average, patients visits
-nrow(data_tele2)/n_distinct(data_tele2$PID) # 2.304843
+nrow(data_tele2)/n_distinct(data_tele2$PID) # 2.24
 
 # SD
 sd_tele <- data_tele2 %>% group_by(PID) %>%
   summarise(n = n())
 
-sd(sd_tele$n) # 1.33
+sd(sd_tele$n) # 1.25
+
+min(sd_tele$n)
+max(sd_tele$n)
 
 # reset rownames
-rownames(data_tele) <- NULL
+rownames(data_tele2) <- NULL
 
 # gender based on visits
 table(data_tele2$SEX)
 
-# male = 206
-# female = 603
+# male 192
+# female 566
 
 prop.table(table(data_tele2$SEX))*100
 
-# male = 25.46
-# female = 74.54
 
 # gender based on person
 person <- person[person$PID %in% intersect(person$PID, data_tele_person$PID), ]
@@ -229,8 +230,8 @@ person$BIRTH <- anydate(person$BIRTH)
 
 table(person$SEX)
 #
-# # male = 104
-# # female = 247
+# # male = 99
+# # female = 239
 #
 prop.table(table(person$SEX))*100
 
@@ -324,7 +325,7 @@ dt_age <- dt_age %>%
   ))
 
 table(dt_age$age_group_NHSO)
-prop.table(table(dt_age$age_group_NHSO))*100 %>% round(2)
+round(prop.table(table(dt_age$age_group_NHSO))*100,2)
 
 
 # freq of visits
@@ -332,41 +333,40 @@ max(table(data_tele2$PID))
 # the most freq = 8
 
 # which one?
-names(which.max(table(data_tele$PID))) # 95623
+names(which.max(table(data_tele2$PID)))
 
 # one visit
-sum(table(data_tele2$PID) == 1) # 130
+sum(table(data_tele2$PID) == 1)
 # more than one visit but less than 2
-sum(table(data_tele2$PID) > 1 & table(data_tele2$PID) <= 2) # 71
+sum(table(data_tele2$PID) > 1 & table(data_tele2$PID) <= 2)
 # more than 2 visit but less than 3
-sum(table(data_tele2$PID) > 2 & table(data_tele2$PID) <= 3) # 96
+sum(table(data_tele2$PID) > 2 & table(data_tele2$PID) <= 3)
 # more than 3 visit but less than 4
-sum(table(data_tele2$PID) > 3 & table(data_tele2$PID) <= 4) # 35
+sum(table(data_tele2$PID) > 3 & table(data_tele2$PID) <= 4)
 # more than 4 visit but less than 5
-sum(table(data_tele2$PID) > 4 & table(data_tele2$PID) <= 5) # 10
+sum(table(data_tele2$PID) > 4 & table(data_tele2$PID) <= 5)
 # more than 5
-sum(table(data_tele2$PID) > 5) # 9
+sum(table(data_tele2$PID) > 5)
 
-130/351*100 # 37.04%
-71/351*100 # 20.23%
-96/351*100 # 27.35%
-35/351*100 # 9.97%
-10/351*100 # 2.85%
-9/351*100 # 2.56%
+123/338*100
+78/338*100
+94/338*100
+28/338*100
+9/338*100
+6/338*100
 
-# age group of visit
+15/338*100
+
+
+# age group by visit (not unique ID)
 table(data_tele2$age_group)
 
 table(subset(data_tele2, SEX == 1)$age_group) # male
-# 10 11 12 13 14 15 16 17 18 19  2  3  4  5  6  7  8  9
-# 18 13 32 26 21 20  4  8 11  0  4  1  0  4  4  9 12 19
 
 table(subset(data_tele2, SEX == 2)$age_group) # female
-# 10  11  12  13  14  15  16  17  18  19   2   3   4   5   6   7   8   9
-# 50  67 117 100  65  69  43  24   4   5   3   0   0   2   0   7  22  25
 
 data$age_group <- as.factor(data$age_group)
-# histogram age
+# histogram age by visit
 ggplot(data = data_tele2, aes(x = as.factor(age_des), fill = as.factor(SEX))) +
   geom_bar(position = position_dodge(), width = 0.7) +
   theme_minimal() +
@@ -386,71 +386,64 @@ ggplot(data = dt_age, aes(x = as.factor(age_des), fill = as.factor(SEX))) +
 
 
 # use data_tele1 for diseases identification
-data_tele[rowSums(is.na(data_tele)) > 0,]
+data_tele2[rowSums(is.na(data_tele2)) > 0,]
 
 # rank the diseases
-data.frame(count=sort(table(data_tele$DIAGCODE), decreasing=TRUE))
+data.frame(count=sort(table(data_tele2$DIAGCODE), decreasing=TRUE))
 
-# 1        E789        565 Disorder of lipoprotein metabolism\,unspecified
-# 2         I10        564 Essential (primary) hypertension
-# 3        E119        280 Non-insulin-dependent diabetes mellitus type 2 at without complications
-# 4        Z719         82 Counselling\, unspecified
-# 5        Z133         69 Special screening examination for mental and behavioural disorders
+# 1         I10        310  Essential (primary) hypertension
+# 2        E119        251  Non-insulin-dependent diabetes mellitus type 2 at without complications
+# 3        F322         31  Severe depressive episode without psychotic symptoms
+# 4        E789         27  Disorder of lipoprotein metabolism\,unspecified
+# 5        Z518         15  Other specified medical care
 
-data.frame(count=sort(prop.table(table(data_tele$DIAGCODE)), decreasing=TRUE))
+data.frame(count=sort(prop.table(table(data_tele2$DIAGCODE)), decreasing=TRUE))
 
-table(data_tele$chapter)
-table(data_tele$title)
+table(data_tele2$chapter)
+table(data_tele2$title)
 
 # separated by genders
-table(subset(data_tele, SEX == 1)$chapter) # male
-# 2   3   4   5   9  10  11  13  14  18  21
-# 1   4 186  51 134   1   4   8  16  23 110
+table(subset(data_tele2, SEX == 1)$chapter) # male
 
-table(subset(data_tele, SEX == 2)$chapter) # female
-# 1   3   4   5   6   7   9  10  11  13  14  18  19  20  21
-# 1  13 711  53   1   3 439   6   1  11  27  79   1   1 153
+
+table(subset(data_tele2, SEX == 2)$chapter) # female
+
 
 # histogram SEX
-ggplot(data = data_tele, aes(x = as.factor(chapter), fill = as.factor(SEX))) +
+ggplot(data = data_tele2, aes(x = as.factor(chapter), fill = as.factor(SEX))) +
   geom_bar(position = position_dodge()) +
   theme_minimal() +
   xlab("ICD-10 Chapter") +
   scale_fill_discrete(name = "Gender", label = c("Male", "Female")) +
   geom_text(aes(label = stat(count)), stat = "count", position = position_dodge(w = 0.75), vjust = -1)
 
-# find out about the patient that has the most visits
-subset(data_tele, PID == "95623")$title %>% table()
-
-# find out about the patient that has the most visits
-subset(data_tele, PID == "95623")$NHSO_policy_des %>% table()
 
 # 6 diseases by genders
-data_tele %>%
+data_tele2 %>%
   group_by(NHSO_policy,NHSO_policy_des,SEX) %>%
   count()
 
 # frequency of visits for the 6 diseases
-table(data_tele$NHSO_policy)
+table(data_tele2$NHSO_policy)
 
-# visits by mont
-data_tele %>%
+# visits by month
+data_tele2 %>%
   group_by(year_month) %>%
   count()
 
 # percent visit each month
-prop.table(table(data_tele$year_month))*100
+prop.table(table(data_tele2$year_month))*100
 
-policy <- data_tele %>%
+policy <- data_tele2 %>%
   group_by(NHSO_policy,NHSO_policy_des,year_month) %>%
   count()
 
 # visit freq based on month
 table(data_tele2$year_month)
-prop.table(table(data_tele2$year_month))*100
+round(prop.table(table(data_tele2$year_month))*100,2)
 
 policy %>%
-  ggplot( aes(x=year_month, y=n, group=NHSO_policy_des, color=NHSO_policy_des,fill = NHSO_policy_des)) +
+  ggplot(aes(x=year_month, y=n, group=NHSO_policy_des, color=NHSO_policy_des,fill = NHSO_policy_des)) +
   geom_line(size = 1.5) +
   scale_color_viridis(discrete = TRUE) +
   geom_point(size = 3) +
@@ -461,7 +454,7 @@ policy %>%
   theme(axis.text = element_text(angle = 90, hjust = 1))
 
 # age group - 6 disease groups
-table(data_tele$NHSO_policy_des,data_tele$age_group)
+table(data_tele2$NHSO_policy_des,data_tele2$age_group)
 
 month_visit <- data_tele2 %>%
   group_by(year_month) %>%
@@ -481,12 +474,6 @@ ggplot(data = month_visit, mapping = aes(x = year_month,y = n ,fill = n)) +
 
 ######## Payment ########################################
 table(data_tele2$INSTYPE)
-# 0100 1100 2301   2C 4200 6100 8200 9100
-# 1999   10    9    1    3    7    2    7
-
-table(data$INSTYPE) %>% plot()
-#  0100  1100  2301    2C    3D  4200  6100  8100  8200  9100    F1  NULL
-# 17370   191    97    21    12   180    32     1    21   165    10     3
 
 ############# average cost ##################
 
@@ -717,4 +704,60 @@ mean(b_ipd_all$count_after, na.rm = T)
 sd(b_ipd_all$count_after, na.rm = T)
 max(b_ipd_all$count_after, na.rm = T)
 min(b_ipd_all$count_after, na.rm = T)
+
+##### one visit ######
+dt <- as.data.frame(table(unique(data_tele2)$PID))
+colnames(dt)[1] <- "PID"
+# choose only PID one time
+dt1 <- dt[dt$Freq == 1,]
+rownames(dt1) <- NULL
+dt2 <- left_join(dt1, data_tele2[, c("PID", "year_month", "DIAGCODE")], by = c("PID"))
+table(dt2$year_month)
+round(prop.table(table(dt2$year_month))*100,2)
+
+table(dt2$DIAGCODE)
+
+# rank the diseases
+data.frame(count=sort(table(dt2$DIAGCODE), decreasing=TRUE))
+
+####### follow-up 3 months #######
+a_opd <- a_opd[, c("PID", "DATE_SERV", "tele_date", "last_day", "after_range", "first_day", "count_before", "count_after")]
+
+b_opd_3 <- a_opd %>%
+  group_by(PID) %>%
+  distinct(count_before, count_after, .keep_all = T)
+
+b_opd_3$trimester <- round(b_opd_3$after_range/90, 2)
+
+# remove less than 90 days
+c_opd_3 <- subset(b_opd_3, trimester >= 1)
+
+mean(c_opd_3$count_before)
+sd(c_opd_3$count_before)
+min(c_opd_3$count_before)
+max(c_opd_3$count_before)
+
+mean(c_opd_3$count_after)
+sd(c_opd_3$count_after)
+min(c_opd_3$count_after)
+max(c_opd_3$count_after)
+
+# calculate pre and post 3 months
+c_opd_3$pre <- round(c_opd_3$count_before / c_opd_3$trimester, 2)
+
+c_opd_3$post <- round(c_opd_3$count_after / c_opd_3$trimester, 2)
+
+# opd
+mean(c_opd_3$pre)
+sd(c_opd_3$pre)
+min(c_opd_3$pre)
+max(c_opd_3$pre)
+
+mean(c_opd_3$post)
+sd(c_opd_3$post)
+min(c_opd_3$post)
+max(c_opd_3$post)
+
+
+table(data_tele2$year_month)
 
