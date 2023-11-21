@@ -380,9 +380,9 @@ ggplot(data = dt_age, aes(x = as.factor(age_des), fill = as.factor(SEX))) +
   geom_bar(position = position_dodge(), width = 0.7) +
   theme_minimal() +
   xlab("Age Group") +
-  scale_fill_discrete(name = "Gender", label = c("Male", "Female")) +
   geom_text(aes(label = stat(count)), stat = "count", position = position_dodge(w = 0.75), vjust = -1) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_fill_manual(values = c("#87CEFA", "#FF9999"), name = "Gender", label = c("Male", "Female"))
 
 
 # use data_tele1 for diseases identification
@@ -760,4 +760,6 @@ max(c_opd_3$post)
 
 
 table(data_tele2$year_month)
+
+ttest(c_opd_pre, c_opd_post)
 
